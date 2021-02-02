@@ -21,7 +21,7 @@ Dir2D displacement(Point2D p1, Point2D p2){
 //Compute the distance between points p1 and p2
 //The result is a scalar 
 float dist(Point2D p1, Point2D p2){
-  return 0; //Wrong, fix me...
+    return vee(p1, p2).magnitude();
 }
 
 //Compute the perpendicular distance from the point p the the line l
@@ -105,18 +105,21 @@ float pointTriangleCornerDist(Point2D p, Point2D t1, Point2D t2, Point2D t3){
 //Your code should work for both clockwise and counterclockwise windings
 //The result is a boolean
 bool isConvex_Quad(Point2D p1, Point2D p2, Point2D p3, Point2D p4){
+    // find intersection points of lines and test if inside poly? no
   return false; //Wrong, fix me...
 }
 
 //Compute the reflection of the point p about the line l
 //The result is a point
 Point2D reflect(Point2D p, Line2D l){
+    // sandwich
   return Point2D(0,0); //Wrong, fix me...
 }
 
 //Compute the reflection of the line d about the line l
 //The result is a line
 Line2D reflect(Line2D d, Line2D l){
+    // sandwich
   return Line2D(0,0,0); //Wrong, fix me...
 }
 
