@@ -27,13 +27,13 @@ float dist(Point2D p1, Point2D p2){
 //Compute the perpendicular distance from the point p the the line l
 //The result is a scalar 
 float dist(Line2D l, Point2D p){
-  return 0; //Wrong, fix me...
+    return vee(p, l.normalized());
 }
 
 //Compute the perpendicular distance from the point p the the line l
 //The result is a scalar 
 float dist(Point2D p, Line2D l){
-  return 0; //Wrong, fix me...
+    return dist(l, p);  // TODO seems sketchy
 }
 
 //Compute the intersection point between lines l1 and l2
