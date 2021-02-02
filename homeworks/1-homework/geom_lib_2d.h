@@ -15,7 +15,7 @@ Point2D move(Point2D p, Dir2D d){
 //Compute the displacement vector between points p1 and p2
 //The result is a direction 
 Dir2D displacement(Point2D p1, Point2D p2){
-  return Dir2D(0,0); //Wrong, fix me...
+    return p2 - p1;
 }
 
 //Compute the distance between points p1 and p2
@@ -40,25 +40,27 @@ float dist(Point2D p, Line2D l){
 //You may assume the lines are not parallel
 //The results is a a point that lies on both lines
 Point2D intersect(Line2D l1, Line2D l2){
-  return Point2D(0,0); //Wrong, fix me...
+    return wedge(l1, l2);
 }
 
 //Compute the line that goes through the points p1 and p2
 //The result is a line 
 Line2D join(Point2D p1, Point2D p2){
-  return Line2D(0,0,0); //Wrong, fix me...
+    return vee(p1, p2);
 }
 
 //Compute the projection of the point p onto line l
 //The result is the closest point to p that lies on line l
 Point2D project(Point2D p, Line2D l){
-  return Point2D(0,0); //Wrong, fix me...
+    Line2D d = dot(l, p);
+    return dot(d, l) + wedge(d, l);
 }
 
 //Compute the projection of the line l onto point p
 //The result is a line that lies on point p in the same direction of l
 Line2D project(Line2D l, Point2D p){
-  return Line2D(0,0,0); //Wrong, fix me...
+    Line2D d = dot(l, p);
+    return dot(d, p) + wedge(d, p);
 }
 
 //Compute the angle point between lines l1 and l2
