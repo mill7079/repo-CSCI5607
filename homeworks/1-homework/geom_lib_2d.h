@@ -9,7 +9,7 @@
 //Displace a point p on the direction d
 //The result is a point
 Point2D move(Point2D p, Dir2D d){
-  return Point2D(0,0); //Wrong, fix me...
+    return p + d;
 }
 
 //Compute the displacement vector between points p1 and p2
