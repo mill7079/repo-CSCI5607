@@ -212,7 +212,7 @@ Point2D reflect(Point2D p, Line2D l){
 //The result is a line
 Line2D reflect(Line2D d, Line2D l){
     // sandwich
-    return l.normalized() * d * l.normalized();
+    return (l.normalized() * d * l.normalized()).normalized();
 }
 
 #endif
