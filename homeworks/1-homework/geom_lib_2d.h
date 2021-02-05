@@ -100,7 +100,17 @@ float pointTriangleEdgeDist(Point2D p, Point2D t1, Point2D t2, Point2D t3){
 // the triangle t1,t2,t3
 //The result is a scalar
 float pointTriangleCornerDist(Point2D p, Point2D t1, Point2D t2, Point2D t3){
-  return 0; //Wrong, fix me...
+    float pt1 = vee(p, t1).magnitude();
+    float pt2 = vee(p, t2).magnitude();
+    float pt3 = vee(p, t3).magnitude();
+    
+    if (pt1 <= pt2 && pt1 <= pt3) {
+        return pt1;
+    } else if (pt2 <= pt1 && pt2 <= pt3) {
+        return pt2;
+    }
+    
+    return pt3;
 }
 
 //Compute if the quad (p1,p2,p3,p4) is convex.
@@ -113,7 +123,7 @@ bool isConvex_Quad(Point2D p1, Point2D p2, Point2D p3, Point2D p4){
 
 //Compute the reflection of the point p about the line l
 //The result is a point
-Point2D reflect(Point2D p, Line2D l){  // TODO NOT WORKING
+Point2D reflect(Point2D p, Line2D l){  //Wrong, fix me....
     // sandwich - lpl
     Line2D lnorm = l.normalized();
     Line2D lp = dot(lnorm, p) + wedge(lnorm, p);
