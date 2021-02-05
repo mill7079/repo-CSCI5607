@@ -92,8 +92,53 @@ float areaTriangle(Point2D t1, Point2D t2, Point2D t3){
 //Compute the distance from the point p to the triangle t1,t2,t3 as defined 
 //by it's distance from the edge closest to p.
 //The result is a scalar
-float pointTriangleEdgeDist(Point2D p, Point2D t1, Point2D t2, Point2D t3){
-  return 0; //Wrong, fix me...
+float pointTriangleEdgeDist(Point2D p, Point2D t1, Point2D t2, Point2D t3){  // TODO maybe compare through tolerance for floats
+    // Compute lines between vertices of triangle
+    Line2D e1 = join(t1, t2);
+    Line2D e2 = join(t2, t3);
+    Line2D e3 = join(t3, t1);
+    
+    // Project point onto each edge line
+    Point2D p1 = project(p, e1);
+    Point2D p2 = project(p, e2);
+    Point2D p3 = project(p, e3);
+    
+    // Clamp point to nearest endpoint if not on segment
+    if (!((dist(p1, t1) + dist(p1, t2)) == dist(t1, t2))) {  // test if point is already on segment
+        if (dist(p1, t1) < dist(p1, t2)) {  // if not, clamp to endpoints
+            p1 = t1;
+        } else {
+            p1 = t2;
+        }
+    }
+    if (!((dist(p2, t2) + dist(p2, t3)) == dist(t2, t3))) {  // same for other two projected points and edges
+        if (dist(p2, t2) < dist(p2, t3)) {
+            p2 = t2;
+        } else {
+            p2 = t3;
+        }
+    }
+    if (!((dist(p3, t3) + dist(p3, t1)) == dist(t3, t1))) {  // same for other two projected points and edges
+        if (dist(p3, t3) < dist(p3, t1)) {
+            p3 = t3;
+        } else {
+            p3 = t1;
+        }
+    }
+    
+    // Return smallest distance
+    float d1 = dist(p, p1);
+    float d2 = dist(p, p2);
+    float d3 = dist(p, p3);
+    
+    if (d1 <= d2 && d1 <= d3) {
+        return d1;
+    } else if (d2 <= d1 && d2 <= d3) {
+        return d2;
+    }
+    
+    return d3;
+    
 }
 
 //Compute the distance from the point p to the closest of three corners of
