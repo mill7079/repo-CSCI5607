@@ -73,7 +73,22 @@ float angle(Line2D l1, Line2D l2){
 //Compute if the line segment p1->p2 intersects the line segment a->b
 //The result is a boolean
 bool segmentSegmentIntersect(Point2D p1, Point2D p2, Point2D a, Point2D b){
-  return false; //Wrong, fix me...
+    // Compute normalized line segments
+    Line2D l1 = join(p1, p2).normalized();
+    Line2D l2 = join(a, b).normalized();
+    
+    // Compute signs for each point in regards to the opposite line
+    // Signs should be opposite for each pair of points
+    int sp1 = sign(vee(p1, l2));
+    int sp2 = sign(vee(p2, l2));
+    if (sp1 == sp2) return false;
+    
+    int sa = sign(vee(a, l1));
+    int sb = sign(vee(b, l1));
+    if (sa == sb) return false;
+    
+    return true;
+    
 }
 
 //Compute if the point p lies inside the triangle t1,t2,t3
