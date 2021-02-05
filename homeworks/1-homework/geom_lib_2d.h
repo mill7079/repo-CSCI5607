@@ -80,7 +80,20 @@ bool segmentSegmentIntersect(Point2D p1, Point2D p2, Point2D a, Point2D b){
 //Your code should work for both clockwise and counterclockwise windings
 //The result is a bool
 bool pointInTriangle(Point2D p, Point2D t1, Point2D t2, Point2D t3){
-  return false; //Wrong, fix me...
+    // Compute lines between vertices of triangle
+    Line2D e1 = join(t1, t2).normalized();
+    Line2D e2 = join(t2, t3).normalized();
+    Line2D e3 = join(t3, t1).normalized();
+    
+    // Compute signs for each point/edge
+    int s1 = sign(vee(p, e1));
+    int s2 = sign(vee(p, e2));
+    int s3 = sign(vee(p, e3));
+    
+    // Point is in triangle if all three signs match
+    if (s1 == s2 && s2 == s3) return true;
+    
+    return false;
 }
 
 //Compute the area of the triangle t1,t2,t3
