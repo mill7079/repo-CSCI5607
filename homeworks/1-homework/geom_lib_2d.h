@@ -189,25 +189,38 @@ float pointTriangleCornerDist(Point2D p, Point2D t1, Point2D t2, Point2D t3){
 //Compute if the quad (p1,p2,p3,p4) is convex.
 //Your code should work for both clockwise and counterclockwise windings
 //The result is a boolean
-bool isConvex_Quad(Point2D p1, Point2D p2, Point2D p3, Point2D p4){
-    // find intersection points of lines and test if inside poly? no
-  return false; //Wrong, fix me...
+bool isConvex_Quad(Point2D p1, Point2D p2, Point2D p3, Point2D p4){ // fix
+    Line2D e1 = join(p1, p2);
+    Line2D e2 = join(p2, p3);
+    Line2D e3 = join(p3, p4);
+    Line2D e4 = join(p4, p1);
+    
+    return sign(vee(p3, e1)) == sign(vee(p4, e1)) &&
+            sign(vee(p1, e2)) == sign(vee(p4, e2)) &&
+            sign(vee(p1, e3)) == sign(vee(p2, e3)) &&
+            sign(vee(p3, e4)) == sign(vee(p3, e4));
 }
 
 //Compute the reflection of the point p about the line l
 //The result is a point
 Point2D reflect(Point2D p, Line2D l){  //Wrong, fix me....
     // sandwich - lpl
-    Line2D lnorm = l.normalized();
-    Line2D lp = dot(lnorm, p) + wedge(lnorm, p);
-    return dot(lp, lnorm) + wedge(lp, lnorm);
+//    Line2D lnorm = l.normalized();
+//    Line2D lp = dot(lnorm, p) + wedge(lnorm, p);
+//    return dot(lp, lnorm) + wedge(lp, lnorm);
+    
+    Line2D pl = dot(p, l) + wedge(p, l);
+    return dot(l, pl) + wedge(l, pl);
 }
 
 //Compute the reflection of the line d about the line l
 //The result is a line
 Line2D reflect(Line2D d, Line2D l){
     // sandwich
-  return Line2D(0,0,0); //Wrong, fix me...
+//  return Line2D(0,0,0); //Wrong, fix me...
+    
+    Line2D pl = dot(d, l) + wedge(d, l);
+    return dot(l, pl) + wedge(l, pl);
 }
 
 #endif
