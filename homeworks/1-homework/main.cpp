@@ -91,7 +91,7 @@ int main(int argc, char *argv[]){
   Point2D b = Point2D(0,2);
   Point2D c = Point2D(2,2);
   Point2D d = Point2D(2,0);
-  Point2D e = Point2D(0.9,0.9);
+  Point2D e = Point2D(0.9,1);
   printf("Is the Quad (a,b,c,d) convex? %d (should be 1/true)\n",isConvex_Quad(a,b,c,d));
   printf("Is the Quad (d,c,b,a) convex? %d (should be 1/true)\n",isConvex_Quad(d,c,b,a));
   printf("Is the Quad (a,c,b,d) convex? %d (should be 0/false)\n",isConvex_Quad(a,c,b,d));
