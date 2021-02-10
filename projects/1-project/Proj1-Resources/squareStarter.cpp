@@ -226,7 +226,7 @@ void mouseDragged(float m_x, float m_y){
    updateVertices();
 }
 
-//You shouldn't have to edit this, it updates the displayed verticies to match the computed p1, p2, p3, p4
+//You shouldn't have to edit this, it updates the displayed vertices to match the computed p1, p2, p3, p4
 void updateVertices(){ 
    vertices[0] = p3.x;  //Top right x
    vertices[1] = p3.y;  //Top right y
@@ -243,8 +243,19 @@ void updateVertices(){
 
 //TODO: Resets the square's position, orientation, and scale
 void r_keyPressed(){
-   cout << "The 'r' key was pressed" <<endl;
+   cout << "The 'r' key was pressed" << endl;
+   
    //You should reset the 4 points of the rectangle, and update the coresponding vertices
+   p1 = init_p1;
+   p2 = init_p2;
+   p3 = init_p3;
+   p4 = init_p4;
+   
+   updateVertices();
+   
+   rect_pos = Point2D(0,0);
+   rect_scale = 1;
+   rect_angle = 0;
 }
 
 /////////////////////////////
