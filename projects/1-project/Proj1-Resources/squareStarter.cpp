@@ -144,8 +144,9 @@ void mouseClicked(float m_x, float m_y){
    int s3 = sign(vee(clicked_mouse, vee(p3.scale(0.9), p4.scale(0.9)).normalized()));
    int s4 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p1.scale(0.9)).normalized()));
    
+   // translate if click was in interior of square
    if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
-//      do_translate = true;
+      do_translate = true;
    } else {
       do_translate = false;
    }
@@ -155,12 +156,26 @@ void mouseClicked(float m_x, float m_y){
        vee(clicked_mouse, p2).magnitude() < corner_radius ||
        vee(clicked_mouse, p3).magnitude() < corner_radius ||
        vee(clicked_mouse, p4).magnitude() < corner_radius)) {
-//      do_scale = true;
+      do_scale = true;
    } else {
       do_scale = false;
    }
    
-   do_rotate = true;
+   // rotate if click was outside interior and away from corners (aka on edges)
+   if (!do_translate && !do_scale) {
+      s1 = sign(vee(clicked_mouse, vee(p1.scale(1.1), p2.scale(1.1)).normalized()));
+      s2 = sign(vee(clicked_mouse, vee(p2.scale(1.1), p3.scale(1.1)).normalized()));
+      s3 = sign(vee(clicked_mouse, vee(p3.scale(1.1), p4.scale(1.1)).normalized()));
+      s4 = sign(vee(clicked_mouse, vee(p4.scale(1.1), p1.scale(1.1)).normalized()));
+      
+      if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
+         do_rotate = true;
+      } else {
+         do_rotate = false;
+      }
+   } else {
+      do_rotate = false;
+   }
 
 }
 
