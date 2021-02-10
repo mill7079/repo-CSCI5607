@@ -143,12 +143,9 @@ void mouseClicked(float m_x, float m_y){
    int s2 = sign(vee(clicked_mouse, vee(p2.scale(0.9), p3.scale(0.9)).normalized()));
    int s3 = sign(vee(clicked_mouse, vee(p3.scale(0.9), p4.scale(0.9)).normalized()));
    int s4 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p1.scale(0.9)).normalized()));
-//   cout << s1 << s2 << s3 << s4 << endl;
-//   cout << "p1: " << p1.x << ", " << p1.y << " scaled: " << p1.scale(0.9).x << ", " << p1.scale(0.9).y << endl;
-//   cout << "rect pos: " << rect_pos.x << ", " << rect_pos.y << " clicked pos: " << clicked_mouse.x << ", " << clicked_mouse.y << endl;
    
    if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
-      do_translate = true;
+//      do_translate = true;
    } else {
       do_translate = false;
    }
@@ -158,12 +155,12 @@ void mouseClicked(float m_x, float m_y){
        vee(clicked_mouse, p2).magnitude() < corner_radius ||
        vee(clicked_mouse, p3).magnitude() < corner_radius ||
        vee(clicked_mouse, p4).magnitude() < corner_radius)) {
-      do_scale = true;
+//      do_scale = true;
    } else {
       do_scale = false;
    }
    
-   do_rotate = false;
+   do_rotate = true;
 
 }
 
@@ -190,7 +187,19 @@ void mouseDragged(float m_x, float m_y){
    
    if (do_rotate){
       //Compute the new angle, rect_angle, based on the mouse positions
-      rect_angle = clicked_angle; //This is wrong: the angle should change based on the mouse movements
+      Line2D orig_orient = vee(rect_pos, clicked_mouse).normalized();
+      Line2D orient = vee(rect_pos, cur_mouse).normalized();
+//      int s = sign(MultiVector(orig_orient).dot(MultiVector(orient)).xy);
+      int s = sign(MultiVector(orig_orient).wedge(orient).xy);
+      float angle = acos(dot(orig_orient, orient));
+      if (s > 0){ // god knows why i can't just fucking multiply this shit
+         angle = -angle;
+      }
+      rect_angle = clicked_angle + angle;
+//      clicked_mouse = cur_mouse;
+//      clicked_angle = rect_angle;
+      
+//      rect_angle = clicked_angle; //This is wrong: the angle should change based on the mouse movements
    }
 
    //Assuming the angle (rect_angle), position (rect_pos), and scale (rect_scale) of the rectangle
