@@ -172,7 +172,6 @@ void mouseDragged(float m_x, float m_y){
    Point2D cur_mouse = Point2D(m_x,m_y);
    
    if (do_translate){
-//      cout << "translate!" << endl;
       Dir2D disp = cur_mouse-clicked_mouse;
       rect_pos = clicked_pos+disp;
    }
@@ -182,24 +181,17 @@ void mouseDragged(float m_x, float m_y){
       Dir2D dist = cur_mouse - rect_pos;
       Dir2D orig_dist = clicked_mouse - rect_pos;
       rect_scale = clicked_size * dist.magnitude() / orig_dist.magnitude();
-//      cout << "scale by: " << rect_scale << " displacement: " << dist.x << ", " << dist.y << endl;
    }
    
    if (do_rotate){
       //Compute the new angle, rect_angle, based on the mouse positions
       Line2D orig_orient = vee(rect_pos, clicked_mouse).normalized();
       Line2D orient = vee(rect_pos, cur_mouse).normalized();
-//      int s = sign(MultiVector(orig_orient).dot(MultiVector(orient)).xy);
-      int s = sign(MultiVector(orig_orient).wedge(orient).xy);
-      float angle = acos(dot(orig_orient, orient));
-      if (s > 0){ // god knows why i can't just fucking multiply this shit
-         angle = -angle;
-      }
-      rect_angle = clicked_angle + angle;
-//      clicked_mouse = cur_mouse;
-//      clicked_angle = rect_angle;
       
-//      rect_angle = clicked_angle; //This is wrong: the angle should change based on the mouse movements
+      int s = sign(MultiVector(orig_orient).wedge(orient).xy);
+      float angle = -s * acos(dot(orig_orient, orient));  // I think I reversed something somewhere? Not sure what
+      
+      rect_angle = clicked_angle + angle;
    }
 
    //Assuming the angle (rect_angle), position (rect_pos), and scale (rect_scale) of the rectangle
