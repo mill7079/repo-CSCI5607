@@ -137,7 +137,22 @@ void mouseClicked(float m_x, float m_y){
    clicked_angle = rect_angle;
    clicked_size = rect_scale;
    
-   do_translate = true;
+   // calculate if clicked point is inside (slightly smaller) square
+   int s1 = sign(vee(clicked_mouse, vee(p1.scale(0.9), p2.scale(0.9)).normalized()));
+   int s2 = sign(vee(clicked_mouse, vee(p2.scale(0.9), p3.scale(0.9)).normalized()));
+   int s3 = sign(vee(clicked_mouse, vee(p3.scale(0.9), p4.scale(0.9)).normalized()));
+   int s4 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p1.scale(0.9)).normalized()));
+//   cout << s1 << s2 << s3 << s4 << endl;
+//   cout << "p1: " << p1.x << ", " << p1.y << " scaled: " << p1.scale(0.9).x << ", " << p1.scale(0.9).y << endl;
+//   cout << "rect pos: " << rect_pos.x << ", " << rect_pos.y << " clicked pos: " << clicked_mouse.x << ", " << clicked_mouse.y << endl;
+   
+   if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
+      do_translate = true;
+   } else {
+      do_translate = false;
+   }
+   
+   
    do_rotate = false;
    do_scale = false;
 
@@ -145,12 +160,13 @@ void mouseClicked(float m_x, float m_y){
 
 //TODO: Update the position, rotation, or scale based on the mouse movement
 //  I've implemented the logic for position, you need to do scaling and angle
-//TODO: Notice how smooth draging the square is (e.g., there are no "jumps" when you click), 
+//TODO: Notice how smooth dragging the square is (e.g., there are no "jumps" when you click),
 //      try to make your implementation of rotate and scale as smooth
 void mouseDragged(float m_x, float m_y){
    Point2D cur_mouse = Point2D(m_x,m_y);
    
    if (do_translate){
+//      cout << "translate!" << endl;
       Dir2D disp = cur_mouse-clicked_mouse;
       rect_pos = clicked_pos+disp;
    }
@@ -213,10 +229,10 @@ void updateVertices(){
    vertices[22] =  p1.y;  //Bottom left y
 }
 
-//TODO: Resest the square's position, orientation, and scale
+//TODO: Resets the square's position, orientation, and scale
 void r_keyPressed(){
    cout << "The 'r' key was pressed" <<endl;
-   //You should reset the 4 points of the rectangle, and update the coresponding verticies
+   //You should reset the 4 points of the rectangle, and update the coresponding vertices
 }
 
 /////////////////////////////
@@ -262,14 +278,14 @@ int main(int argc, char *argv[]){
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 	
 	//Create a window (offsetx, offsety, width, height, flags)
-	SDL_Window* window = SDL_CreateWindow("My OpenGL Program", 100, 100, screen_width, screen_height, SDL_WINDOW_OPENGL);
+	SDL_Window* window = SDL_CreateWindow("Here be a square", 100, 100, screen_width, screen_height, SDL_WINDOW_OPENGL);
    //TODO: TEST your understanding: Try changing the title of the window to something more personalized.
 	
 	//The above window cannot be resized which makes some code slightly easier.
 	//Below show how to make a full screen window or allow resizing
 	//SDL_Window* window = SDL_CreateWindow("My OpenGL Program", 0, 0, screen_width, screen_height, SDL_WINDOW_FULLSCREEN|SDL_WINDOW_OPENGL);
 	//SDL_Window* window = SDL_CreateWindow("My OpenGL Program", 100, 100, screen_width, screen_height, SDL_WINDOW_RESIZABLE|SDL_WINDOW_OPENGL);
-	//SDL_Window* window = SDL_CreateWindow("My OpenGL Program",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,0,0,SDL_WINDOW_FULLSCREEN_DESKTOP|SDL_WINDOW_OPENGL); //Boarderless window "fake" full screen
+	//SDL_Window* window = SDL_CreateWindow("My OpenGL Program",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,0,0,SDL_WINDOW_FULLSCREEN_DESKTOP|SDL_WINDOW_OPENGL); //Borderless window "fake" full screen
 
    float aspect = screen_width/(float)screen_height; //aspect ratio (needs to be updated if the window is resized)
 	
