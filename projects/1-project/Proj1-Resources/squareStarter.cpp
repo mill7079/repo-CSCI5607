@@ -62,6 +62,7 @@ Line2D l4 = vee(p4,p1).normalized();
 Point2D clicked_pos;
 Point2D clicked_mouse;
 float clicked_angle, clicked_size;
+float corner_radius = 0.05;
 
 void mouseClicked(float mx, float my); //Called when mouse is pressed down
 void mouseDragged(float mx, float my); //Called each time the mouse is moved during click
@@ -151,10 +152,18 @@ void mouseClicked(float m_x, float m_y){
    } else {
       do_translate = false;
    }
-   
+
+   // scale if click was near a corner
+   if (!do_translate && (vee(clicked_mouse, p1).magnitude() < corner_radius ||
+       vee(clicked_mouse, p2).magnitude() < corner_radius ||
+       vee(clicked_mouse, p3).magnitude() < corner_radius ||
+       vee(clicked_mouse, p4).magnitude() < corner_radius)) {
+      do_scale = true;
+   } else {
+      do_scale = false;
+   }
    
    do_rotate = false;
-   do_scale = false;
 
 }
 
@@ -173,7 +182,10 @@ void mouseDragged(float m_x, float m_y){
    
    if (do_scale){
       //Compute the new size, g_size, based on the mouse positions
-      rect_scale = clicked_size; //This is wrong: the scale should grow or shrink based on the mouse movements
+      Dir2D dist = cur_mouse - rect_pos;
+      Dir2D orig_dist = clicked_mouse - rect_pos;
+      rect_scale = clicked_size * dist.magnitude() / orig_dist.magnitude();
+//      cout << "scale by: " << rect_scale << " displacement: " << dist.x << ", " << dist.y << endl;
    }
    
    if (do_rotate){
