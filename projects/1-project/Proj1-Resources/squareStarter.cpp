@@ -24,7 +24,7 @@ using namespace std;
 string textures[] = {"qrow.ppm", "goldy.ppm", "brick.ppm", "sylvia.ppm", "bella.ppm"};
 string textureName = textures[0];
 int tex = 0;
-float img_brighten = 1.3f;
+float img_brighten = 1.0f;
 
 //Screen size
 int screen_width = 800;
@@ -296,13 +296,21 @@ void load_texture() {
    glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-void t_keyPressed() {
+void t_keyPressed() {  // change texture
 //   textureName = "goldy.ppm";
    cout << "The 't' key was pressed" << endl;
    textureName = textures[(++tex) % 5];
    load_texture();
 }
 
+void b_keyPressed() {  // toggle brightness
+   cout << "The 'b' key was pressed" << endl;
+   if (img_brighten > 1)
+      img_brighten = 1;
+   else img_brighten = 1.5;
+   
+   load_texture();
+}
 
 /////////////////////////////
 /// ... below is OpenGL specifc code,
@@ -481,8 +489,10 @@ int main(int argc, char *argv[]){
             fullscreen = !fullscreen;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_r) //If "r" is pressed
             r_keyPressed();
-         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_t) //If "r" is pressed
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_t) //If "t" is pressed
             t_keyPressed();
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_b) //If "b" is pressed
+            b_keyPressed();
          SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0); //Set to full screen 
       }
       
