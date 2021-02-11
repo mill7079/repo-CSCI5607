@@ -21,7 +21,8 @@ using namespace std;
 
 
 //Name of image texture
-string textureName = "test.ppm";
+string textureName = "qrow.ppm";
+int img_brighten = 100;
 
 //Screen size
 int screen_width = 800;
@@ -111,14 +112,45 @@ unsigned char* loadImage(int& img_w, int& img_h){
 
    //TODO: This loop puts in fake data, replace with the actual pixels read from the file
    //      ... see project description for a hint on how to do this
-   for (int i = 0; i < img_h; i++){
-      float fi = i/(float)img_h;
+   int red, green, blue;
+//   for (int i = 0; i < img_h; i++){
+   for (int i = img_h - 1; i >= 0; i--) {
+//      float fi = i/(float)img_h;
       for (int j = 0; j < img_w; j++){
-         float fj = j/(float)img_w;
-         img_data[i*img_w*4 + j*4] = 50;  //Red
-         img_data[i*img_w*4 + j*4 + 1] = fj*150;  //Green
-         img_data[i*img_w*4 + j*4 + 2] = fi*250;  //Blue
-         img_data[i*img_w*4 + j*4 + 3] = 255;  //Alpha
+//      for (int j = img_w - 1; j >= 0; j--) {
+         ppmFile >> red >> green >> blue;
+//         float fj = j/(float)img_w;
+//         img_data[i*img_w*4 + j*4] = 50;  //Red
+//         img_data[i*img_w*4 + j*4 + 1] = fj*150;  //Green
+//         img_data[i*img_w*4 + j*4 + 2] = fi*250;  //Blue
+//         img_data[i*img_w*4 + j*4 + 3] = 255;  //Alpha
+         
+//         ppmFile >> img_data[i*img_w*4 + j*4];  //Red
+//         ppmFile >> img_data[i*img_w*4 + j*4 + 1];  //Green
+//         ppmFile >> img_data[i*img_w*4 + j*4 + 2];  //Blue
+         
+         // brighten colors
+//         int colorMax = max(max(red, green), blue);
+//         int diff = 255 - colorMax;
+//         int diff = 0;  // testing ppm
+         
+         
+//         red += img_brighten;
+//         clamp(red, 0, 255);
+//         green += img_brighten;
+//         clamp(green, 0, 255);
+//         blue += img_brighten;
+//         clamp(blue, 0, 255);
+         
+//         cout << red << " " << green << " " << blue << endl;
+         
+//         img_data[i*img_w*4 + j*4] = red + diff;  //Red
+//         img_data[i*img_w*4 + j*4 + 1] = green + diff;  //Green
+//         img_data[i*img_w*4 + j*4 + 2] = blue + diff;  //Blue
+         img_data[i*img_w*4 + j*4] = red;  //Red
+         img_data[i*img_w*4 + j*4 + 1] = green;  //Green
+         img_data[i*img_w*4 + j*4 + 2] = blue;  //Blue
+         
       }
    }
 
@@ -317,7 +349,7 @@ int main(int argc, char *argv[]){
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 	
 	//Create a window (offsetx, offsety, width, height, flags)
-	SDL_Window* window = SDL_CreateWindow("Here be a square", 100, 100, screen_width, screen_height, SDL_WINDOW_OPENGL);
+	SDL_Window* window = SDL_CreateWindow("bad_luck_charm.exe", 100, 100, screen_width, screen_height, SDL_WINDOW_OPENGL);
    //TODO: TEST your understanding: Try changing the title of the window to something more personalized.
 	
 	//The above window cannot be resized which makes some code slightly easier.
