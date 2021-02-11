@@ -21,7 +21,9 @@ using namespace std;
 
 
 //Name of image texture
-string textureName = "qrow.ppm";
+string textures[] = {"qrow.ppm", "goldy.ppm", "brick.ppm", "sylvia.ppm", "bella.ppm"};
+string textureName = textures[0];
+int tex = 0;
 float img_brighten = 1.3f;
 
 //Screen size
@@ -286,6 +288,22 @@ void r_keyPressed(){
    rect_angle = 0;
 }
 
+void load_texture() {
+   int img_w, img_h;
+   unsigned char* img_data = loadImage(img_w,img_h);
+   
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_w, img_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
+   glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+void t_keyPressed() {
+//   textureName = "goldy.ppm";
+   cout << "The 't' key was pressed" << endl;
+   textureName = textures[(++tex) % 5];
+   load_texture();
+}
+
+
 /////////////////////////////
 /// ... below is OpenGL specifc code,
 ///     we will cover it in detail around Week 9,
@@ -463,6 +481,8 @@ int main(int argc, char *argv[]){
             fullscreen = !fullscreen;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_r) //If "r" is pressed
             r_keyPressed();
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_t) //If "r" is pressed
+            t_keyPressed();
          SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0); //Set to full screen 
       }
       
