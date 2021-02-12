@@ -43,6 +43,8 @@ float vertices[] = {  //The function updateVertices() changes these values to ma
   -0.3f, -0.3f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom left
 };
 
+int square = 4;  // number of vertices to draw
+
 Point2D origin = Point2D(0,0);
 
 //Watch winding...
@@ -52,6 +54,9 @@ Point2D init_p3 = Point2D(vertices[0],vertices[1]);
 Point2D init_p4 = Point2D(vertices[14],vertices[15]);
 
 Point2D p1 = init_p1, p2 = init_p2, p3 = init_p3, p4 = init_p4;
+
+// make array of vertices
+Point2D p[] = {p1, p2, p3, p4};  // each has size 8 apparently. hopefully these update. idk how c++ works
 
 //Build lines along the edges or the rectange
 //This is helpful for later geometric calculations
@@ -158,35 +163,69 @@ void mouseClicked(float m_x, float m_y){
    int s3 = sign(vee(clicked_mouse, vee(p3.scale(0.9), p4.scale(0.9)).normalized()));
    int s4 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p1.scale(0.9)).normalized()));
    
-   // translate if click was in interior of square
-   if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
-      do_translate = true;
-   } else {
-      do_translate = false;
+   if (square == 3) {
+      s1 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p2.scale(0.9)).normalized()));
    }
+   int signs[] = {s1, s2, s3, s4};
+   int total = 0;
+   
+   for (int i = 0; i < square; i++) {
+//      cout << "signs[" << i << "]: " << signs[i] << endl;
+      total += signs[i];
+//      cout << "total: " << total << endl;
+   }
+   
+   // translate if click was in interior of square
+//   if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
+//      do_translate = true;
+//   } else {
+//      do_translate = false;
+//   }
+//   cout << "total: " << abs(total) << "square: " << square << endl;
+//   if (abs(total) == square) {
+//      do_translate = true;
+//   } else {
+//      do_translate = false;
+//   }
+   do_translate = (abs(total) == square);
 
    // scale if click was near a corner
-   if (!do_translate && (vee(clicked_mouse, p1).magnitude() < corner_radius ||
+//   if (!do_translate && ((vee(clicked_mouse, p1).magnitude() < corner_radius && square == 4) ||
+//       vee(clicked_mouse, p2).magnitude() < corner_radius ||
+//       vee(clicked_mouse, p3).magnitude() < corner_radius ||
+//       vee(clicked_mouse, p4).magnitude() < corner_radius)) {
+//      do_scale = true;
+//   } else {
+//      do_scale = false;
+//   }
+   do_scale = (!do_translate && ((vee(clicked_mouse, p1).magnitude() < corner_radius && square == 4) ||
        vee(clicked_mouse, p2).magnitude() < corner_radius ||
        vee(clicked_mouse, p3).magnitude() < corner_radius ||
-       vee(clicked_mouse, p4).magnitude() < corner_radius)) {
-      do_scale = true;
-   } else {
-      do_scale = false;
-   }
+                                 vee(clicked_mouse, p4).magnitude() < corner_radius));
    
    // rotate if click was outside interior and away from corners (aka on edges)
    if (!do_translate && !do_scale) {
-      s1 = sign(vee(clicked_mouse, vee(p1.scale(1.1), p2.scale(1.1)).normalized()));
-      s2 = sign(vee(clicked_mouse, vee(p2.scale(1.1), p3.scale(1.1)).normalized()));
-      s3 = sign(vee(clicked_mouse, vee(p3.scale(1.1), p4.scale(1.1)).normalized()));
-      s4 = sign(vee(clicked_mouse, vee(p4.scale(1.1), p1.scale(1.1)).normalized()));
+      signs[0] = sign(vee(clicked_mouse, vee(p1.scale(1.1), p2.scale(1.1)).normalized()));
+      signs[1] = sign(vee(clicked_mouse, vee(p2.scale(1.1), p3.scale(1.1)).normalized()));
+      signs[2] = sign(vee(clicked_mouse, vee(p3.scale(1.1), p4.scale(1.1)).normalized()));
+      signs[3] = sign(vee(clicked_mouse, vee(p4.scale(1.1), p1.scale(1.1)).normalized()));
       
-      if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
-         do_rotate = true;
-      } else {
-         do_rotate = false;
+      if (square == 3) {
+         signs[0] = sign(vee(clicked_mouse, vee(p4.scale(1.1), p2.scale(1.1)).normalized()));
       }
+      
+      total = 0;
+      for (int i = 0; i < square; i++) {
+         total += signs[i];
+      }
+      
+      do_rotate = (abs(total) == square);
+      
+//      if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
+//         do_rotate = true;
+//      } else {
+//         do_rotate = false;
+//      }
    } else {
       do_rotate = false;
    }
@@ -310,6 +349,11 @@ void b_keyPressed() {  // toggle brightness
    else img_brighten = 1.5;
    
    load_texture();
+}
+
+void s_keyPressed() {  // toggle triangle
+   cout << "s key pressed" << endl;
+   square = (square - 2) % 2 + 3;
 }
 
 /////////////////////////////
@@ -493,6 +537,8 @@ int main(int argc, char *argv[]){
             t_keyPressed();
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_b) //If "b" is pressed
             b_keyPressed();
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_s) //If "s" is pressed, switch between shapes
+            s_keyPressed();
          SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0); //Set to full screen 
       }
       
@@ -518,7 +564,8 @@ int main(int argc, char *argv[]){
       glClearColor(0.6f, 0.6, 0.6f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
                
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); //Draw the two triangles (4 vertices) making up the square
+//      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); //Draw the two triangles (4 vertices) making up the square
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, square); //Draw the two triangles (4 vertices) making up the square
       //TODO: TEST your understanding: What shape do you expect to see if you change the above 4 to 3?  Guess, then try it!
 
       SDL_GL_SwapWindow(window); //Double buffering
