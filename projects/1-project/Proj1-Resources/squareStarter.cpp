@@ -25,6 +25,14 @@ string textures[] = {"qrow.ppm", "goldy.ppm", "brick.ppm", "sylvia.ppm", "bella.
 string textureName = textures[0];
 int tex = 0;
 float img_brighten = 1.0f;
+int gray_filter = 0;
+float t = 1.2;  // threshold for red filter
+
+// cursors
+SDL_Cursor* default_cursor;
+SDL_Cursor* translate_cursor;
+SDL_Cursor* scale_cursor;
+SDL_Cursor* rotate_cursor;
 
 //Screen size
 int screen_width = 800;
@@ -134,6 +142,75 @@ unsigned char* loadImage(int& img_w, int& img_h){
          blue *= img_brighten;
          blue = clamp(blue, 0, 255);
          
+//         cout << red << " " << blue << " " << green << endl;
+         
+//         if (red_filter) {
+//            if ((red/t) <= green || (red/t) <= blue) {
+//               float gray = 0.3 * red + 0.6 * green + 0.1 * blue;
+//               red = gray;
+//               green = gray;
+//               blue = gray;
+//            } else {
+//               red += 25;
+//               red = clamp(red, 0, 255);
+//            }
+//            green = red;
+//            blue = red;
+//         }
+         float gray = 0.3 * red + 0.6 * green + 0.1 * blue;
+         
+         switch (gray_filter) {
+            case 1:
+               green = red;
+               blue = red;
+               break;
+            case 2:
+               red = green;
+               blue = green;
+               break;
+            case 3:
+               red = blue;
+               green = blue;
+               break;
+            case 4:
+               red = gray;
+               green = gray;
+               blue = gray;
+               break;
+            case 5:
+               if (blue > 50 && blue > red && blue > (green)) {
+                  blue += 25;
+                  blue = clamp(blue, 0, 255);
+               } else {
+                  red = gray;
+                  green = gray;
+                  blue = gray;
+               }
+               break;
+            case 6:
+               if (green > 50 && green > blue && green > (red)) {
+                  green += 25;
+                  green = clamp(green, 0, 255);
+               } else {
+                  red = gray;
+                  green = gray;
+                  blue = gray;
+               }
+               break;
+            case 7:
+               if (red > 50 && red > blue && red > (green)) {
+                  red += 25;
+                  red = clamp(red, 0, 255);
+               } else {
+                  red = gray;
+                  green = gray;
+                  blue = gray;
+               }
+               break;
+            default:
+               break;
+         }
+         
          img_data[i*img_w*4 + j*4] = red;  //Red
          img_data[i*img_w*4 + j*4 + 1] = green;  //Green
          img_data[i*img_w*4 + j*4 + 2] = blue;  //Blue
@@ -148,7 +225,7 @@ unsigned char* loadImage(int& img_w, int& img_h){
 // Here, I just assume there is always a translate operation. Fix this to switch between
 // translate, rotate, and scale based on where on the square the user clicks.
 void mouseClicked(float m_x, float m_y){   
-   printf("Clicked at %f, %f\n",m_x,m_y);
+//   printf("Clicked at %f, %f\n",m_x,m_y);
 
    //We may need to know the state of the mouse and the square at the moment the user clicked
    //  so we save them in the follow four variables.
@@ -157,51 +234,36 @@ void mouseClicked(float m_x, float m_y){
    clicked_angle = rect_angle;
    clicked_size = rect_scale;
    
-   // calculate if clicked point is inside (slightly smaller) square
+   // translate if clicked point is inside (slightly smaller) square/triangle
    int s1 = sign(vee(clicked_mouse, vee(p1.scale(0.9), p2.scale(0.9)).normalized()));
    int s2 = sign(vee(clicked_mouse, vee(p2.scale(0.9), p3.scale(0.9)).normalized()));
    int s3 = sign(vee(clicked_mouse, vee(p3.scale(0.9), p4.scale(0.9)).normalized()));
    int s4 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p1.scale(0.9)).normalized()));
-   
    if (square == 3) {
       s1 = sign(vee(clicked_mouse, vee(p4.scale(0.9), p2.scale(0.9)).normalized()));
    }
+   
    int signs[] = {s1, s2, s3, s4};
    int total = 0;
-   
    for (int i = 0; i < square; i++) {
-//      cout << "signs[" << i << "]: " << signs[i] << endl;
       total += signs[i];
-//      cout << "total: " << total << endl;
    }
    
-   // translate if click was in interior of square
-//   if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
-//      do_translate = true;
-//   } else {
-//      do_translate = false;
-//   }
-//   cout << "total: " << abs(total) << "square: " << square << endl;
-//   if (abs(total) == square) {
-//      do_translate = true;
-//   } else {
-//      do_translate = false;
-//   }
    do_translate = (abs(total) == square);
+   
+   if (do_translate) {
+      SDL_SetCursor(translate_cursor);
+   }
 
    // scale if click was near a corner
-//   if (!do_translate && ((vee(clicked_mouse, p1).magnitude() < corner_radius && square == 4) ||
-//       vee(clicked_mouse, p2).magnitude() < corner_radius ||
-//       vee(clicked_mouse, p3).magnitude() < corner_radius ||
-//       vee(clicked_mouse, p4).magnitude() < corner_radius)) {
-//      do_scale = true;
-//   } else {
-//      do_scale = false;
-//   }
    do_scale = (!do_translate && ((vee(clicked_mouse, p1).magnitude() < corner_radius && square == 4) ||
        vee(clicked_mouse, p2).magnitude() < corner_radius ||
        vee(clicked_mouse, p3).magnitude() < corner_radius ||
                                  vee(clicked_mouse, p4).magnitude() < corner_radius));
+   
+   if (do_scale) {
+      SDL_SetCursor(scale_cursor);
+   }
    
    // rotate if click was outside interior and away from corners (aka on edges)
    if (!do_translate && !do_scale) {
@@ -209,7 +271,6 @@ void mouseClicked(float m_x, float m_y){
       signs[1] = sign(vee(clicked_mouse, vee(p2.scale(1.1), p3.scale(1.1)).normalized()));
       signs[2] = sign(vee(clicked_mouse, vee(p3.scale(1.1), p4.scale(1.1)).normalized()));
       signs[3] = sign(vee(clicked_mouse, vee(p4.scale(1.1), p1.scale(1.1)).normalized()));
-      
       if (square == 3) {
          signs[0] = sign(vee(clicked_mouse, vee(p4.scale(1.1), p2.scale(1.1)).normalized()));
       }
@@ -220,12 +281,9 @@ void mouseClicked(float m_x, float m_y){
       }
       
       do_rotate = (abs(total) == square);
-      
-//      if (s1 == s2 && s2 == s3 && s3 == s4 && s4 == s1) {
-//         do_rotate = true;
-//      } else {
-//         do_rotate = false;
-//      }
+      if (do_rotate) {
+         SDL_SetCursor(rotate_cursor);
+      }
    } else {
       do_rotate = false;
    }
@@ -356,6 +414,39 @@ void s_keyPressed() {  // toggle triangle
    square = (square - 2) % 2 + 3;
 }
 
+void g_keyPressed() {  // grayscale filter
+   cout << "g pressed" << endl;
+   gray_filter = (++gray_filter) % 8;
+   switch (gray_filter) {
+      case 1:
+         cout << "red grayscale" << endl;
+         break;
+      case 2:
+         cout << "green grayscale" << endl;
+         break;
+      case 3:
+         cout << "blue grayscale" << endl;
+         break;
+      case 4:
+         cout << "true grayscale" << endl;
+         break;
+      case 5:
+         cout << "blue filter" << endl;
+         break;
+      case 6:
+         cout << "green filter" << endl;
+         break;
+      case 7:
+         cout << "red filter" << endl;
+         break;
+      default:
+         cout << "normal" << endl;
+         break;
+   }
+   
+   load_texture();
+}
+
 /////////////////////////////
 /// ... below is OpenGL specifc code,
 ///     we will cover it in detail around Week 9,
@@ -392,6 +483,10 @@ float mouse_dragging = false;
 int main(int argc, char *argv[]){
 
    SDL_Init(SDL_INIT_VIDEO);  //Initialize Graphics (for OpenGL)
+   default_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+   translate_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+   scale_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+   rotate_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
    
    //Ask SDL to get a fairly recent version of OpenGL (3.2 or greater)
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -539,6 +634,8 @@ int main(int argc, char *argv[]){
             b_keyPressed();
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_s) //If "s" is pressed, switch between shapes
             s_keyPressed();
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_g) //If "g" is pressed, add filter
+            g_keyPressed();
          SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0); //Set to full screen 
       }
       
@@ -555,6 +652,7 @@ int main(int argc, char *argv[]){
       } 
       else{
          mouse_dragging = false;
+         SDL_SetCursor(SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW));
       }
       
       glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW); //upload vertices to vbo
@@ -579,6 +677,12 @@ int main(int argc, char *argv[]){
    glDeleteBuffers(1, &vbo);
 
    glDeleteVertexArrays(1, &vao);
+   
+   // free cursors
+   SDL_FreeCursor(default_cursor);
+   SDL_FreeCursor(translate_cursor);
+   SDL_FreeCursor(scale_cursor);
+   SDL_FreeCursor(rotate_cursor);
 
 
    //Clean Up
