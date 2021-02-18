@@ -229,9 +229,7 @@ Image* Image::Crop(int x, int y, int w, int h) {
    int i, j, xPos, yPos;
    for (xPos = x, i = 0; xPos < x + w; xPos++) {
       for (yPos = y, j = 0; yPos < y + h; yPos++) {
-         Pixel p = GetPixel(xPos,yPos);
-         cout << "p red: " << p.r << endl;
-         crop->GetPixel(i, j) = p;
+         crop->GetPixel(i, j) = GetPixel(xPos,yPos);
          j++;
       }
       i++;
