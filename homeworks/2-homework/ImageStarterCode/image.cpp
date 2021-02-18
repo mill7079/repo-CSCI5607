@@ -100,17 +100,16 @@ uint8_t* read_ppm(char* imgName, int& width, int& height){
    //TODO - HW2: When you read the values into img_data scale the values up to be 8 bits
    //TODO - HW2: For example, the value 1 in a 1 bit PPM should become 255 ... 
    //TODO - HW2: Likewise, the value 1 in a 2 bit PPM should become 127 (or 128).
+   // TODO: Test this more
    int r, g, b;
    int bits = log2(maximum + 1);
-   printf("bits: %d\n", bits);
-   int min = (1 << (7-bits)) - 1;
-   printf("min: %d\n", min);
-   for (int i = 0; i < height; i++){  // TODO: somewhat fucky still. need to scale properly
+   int min = (1 << (7-bits)) - 1;  // avoid darkening the image
+   for (int i = 0; i < height; i++){
       for (int j = 0; j < width; j++){
          ppmFile >> r >> g >> b;
-         img_data[i*width*4 + j*4] = (r << (8-bits));// + min;  //Red
-         img_data[i*width*4 + j*4 + 1] = (g << (8-bits));// + min;  //Green
-         img_data[i*width*4 + j*4 + 2] = (b << (8-bits));// + min;  //Blue
+         img_data[i*width*4 + j*4] = (r << (8-bits)) + (min * (bits%8));  //Red
+         img_data[i*width*4 + j*4 + 1] = (g << (8-bits)) + (min * (bits%8));  //Green
+         img_data[i*width*4 + j*4 + 2] = (b << (8-bits)) + (min * (bits%8));  //Blue
 //         img_data[i*width*4 + j*4] = r;  //Red
 //         img_data[i*width*4 + j*4 + 1] = g;  //Green
 //         img_data[i*width*4 + j*4 + 2] = b;  //Blue
