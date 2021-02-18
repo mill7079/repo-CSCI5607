@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <iostream>
 
 #include <fstream>
 using namespace std;
 
-//TODO - HW2: The current implementation of write_ppm ignores the paramater "bits" and assumes we want to write out an 8-bit PPM ...
+//TODO - HW2: The current implementation of write_ppm ignores the parameter "bits" and assumes we want to write out an 8-bit PPM ...
 //TODO - HW2: ... you need to adjust the function to scale the values written in the PPM file based on the "bits" variable
 void write_ppm(char* imgName, int width, int height, int bits, const uint8_t *data){
    //Open the texture image file
@@ -76,10 +77,21 @@ uint8_t* read_ppm(char* imgName, int& width, int& height){
    //Check that the 3rd line is 255 (ie., this is an 8 bit/pixel PPM)
    int maximum;
    ppmFile >> maximum;
-   //TODO - HW2: Remove this check below, instead make the function for for maximum values besides 255
-   if (maximum != 255) {
-      printf("ERROR: We assume Maximum size is 255, not (%d)\n",maximum);
-      printf("TODO: This error means you didn't finish your HW yet!\n");
+   //TODO - HW2: Remove this check below, instead make the function for maximum values besides 255
+//   if (maximum != 255) {
+//      printf("ERROR: We assume Maximum size is 255, not (%d)\n",maximum);
+//      printf("TODO: This error means you didn't finish your HW yet!\n");
+//      exit(1);
+//   }
+   bool success = false;
+   for (int i = 1; i <= 8 && !success; i++) {
+      if (maximum == (pow(2, i) - 1)) {
+         success = true;
+      }
+   }
+
+   if (!success) {
+      printf("ERROR: We assume Maximum size (%d) invalid\n",maximum);
       exit(1);
    }
 	
@@ -89,12 +101,19 @@ uint8_t* read_ppm(char* imgName, int& width, int& height){
    //TODO - HW2: For example, the value 1 in a 1 bit PPM should become 255 ... 
    //TODO - HW2: Likewise, the value 1 in a 2 bit PPM should become 127 (or 128).
    int r, g, b;
-   for (int i = 0; i < height; i++){
+   int bits = log2(maximum + 1);
+   printf("bits: %d\n", bits);
+   int min = (1 << (7-bits)) - 1;
+   printf("min: %d\n", min);
+   for (int i = 0; i < height; i++){  // TODO: somewhat fucky still. need to scale properly
       for (int j = 0; j < width; j++){
          ppmFile >> r >> g >> b;
-         img_data[i*width*4 + j*4] = r;  //Red
-         img_data[i*width*4 + j*4 + 1] = g;  //Green
-         img_data[i*width*4 + j*4 + 2] = b;  //Blue
+         img_data[i*width*4 + j*4] = (r << (8-bits));// + min;  //Red
+         img_data[i*width*4 + j*4 + 1] = (g << (8-bits));// + min;  //Green
+         img_data[i*width*4 + j*4 + 2] = (b << (8-bits));// + min;  //Blue
+//         img_data[i*width*4 + j*4] = r;  //Red
+//         img_data[i*width*4 + j*4 + 1] = g;  //Green
+//         img_data[i*width*4 + j*4 + 2] = b;  //Blue
          img_data[i*width*4 + j*4 + 3] = 255;  //Alpha
       }
    }
@@ -213,7 +232,24 @@ Image* Image::Crop(int x, int y, int w, int h) {
 
 //TODO - HW2: Keep only non-zero red, green, or blue components for the channel value 0, 1, and 2 respectively
 void Image::ExtractChannel(int channel) {
-	/* WORK HERE */
+   for (int x = 0 ; x < Width(); x++){
+      for (int y = 0 ; y < Height(); y++){
+         Pixel p = GetPixel(x,y);
+         switch (channel) {
+            case 0:
+               GetPixel(x,y).Set(p.r, 0, 0);
+               break;
+            case 1:
+               GetPixel(x,y).Set(0, p.g, 0);
+               break;
+            case 2:
+               GetPixel(x,y).Set(0, 0, p.b);
+               break;
+            default:
+               break;
+         }
+      }
+   }
 }
 
 //TODO - HW2: Quantize the intensities stored for each pixel's values into 2^nbits possible equally-spaced values
