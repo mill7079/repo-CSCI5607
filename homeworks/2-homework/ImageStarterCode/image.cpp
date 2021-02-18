@@ -225,8 +225,18 @@ void Image::Brighten (double factor){
 
 //TODO - HW2: Crop an image to a rectangle starting at (x,y) with a width w and a height h
 Image* Image::Crop(int x, int y, int w, int h) {
-	/* WORK HERE */
-	return NULL;
+   Image* crop = new Image(w, h);
+   int i, j, xPos, yPos;
+   for (xPos = x, i = 0; xPos < x + w; xPos++) {
+      for (yPos = y, j = 0; yPos < y + h; yPos++) {
+         Pixel p = GetPixel(xPos,yPos);
+         cout << "p red: " << p.r << endl;
+         crop->GetPixel(i, j) = p;
+         j++;
+      }
+      i++;
+   }
+	return crop;
 }
 
 //TODO - HW2: Keep only non-zero red, green, or blue components for the channel value 0, 1, and 2 respectively
