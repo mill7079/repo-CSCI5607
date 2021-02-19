@@ -262,5 +262,9 @@ void Image::ExtractChannel(int channel) {
 //TODO - HW2: Quantize the intensities stored for each pixel's values into 2^nbits possible equally-spaced values
 //TODO - HW2: You may find a very helpful function in the pixel class!
 void Image::Quantize (int nbits) {
-	/* WORK HERE */
+   for (int x = 0; x < Width(); x++) {
+      for (int y = 0; y < Height(); y++) {
+         GetPixel(x,y) = PixelQuant(GetPixel(x,y), nbits);
+      }
+   }
 }
