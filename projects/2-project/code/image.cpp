@@ -146,18 +146,66 @@ Image* Image::Crop(int x, int y, int w, int h){
    return crop;
 }
 
-
+// TODO: THIS
 void Image::AddNoise (double factor){
 	/* WORK HERE */
 }
 
 void Image::ChangeContrast (double factor){
-	/* WORK HERE */
+   // find average gray
+   int x, y;
+   float gray = 0;
+   
+   for (x = 0; x < Width(); x++) {
+      for (y = 0; y < Height(); y++) {
+         Pixel p = GetPixel(x,y);
+//         gray += (0.3*p.r + 0.6*p.g + 0.1*p.b);v
+         gray += p.Luminance();
+      }
+   }
+   gray /= (Width() * Height());
+   Pixel grayP = Pixel(gray, gray, gray);
+   
+   // scale deviation for each pixel
+//   float val, dev;
+//   float l, xx, d, sd;  // luminance, scale factor, deviation, scaled deviation
+   for (x = 0; x < Width(); x++) {
+      for (y = 0; y < Height(); y++) {
+//         Pixel p = GetPixel(x,y);
+//         val = (0.3*p.r + 0.6*p.g + 0.1*p.b);
+////         dev = val - gray;
+//
+//         dev = 1 + ((val - gray)/gray);
+//         GetPixel(x, y).SetClamp(p.r*dev, p.g*dev, p.b*dev);
+         
+//         l = p.Luminance();
+//         d = l - gray;
+//         sd = d * factor;
+//
+//         xx = ((sd + gray) / l);
+//
+//         GetPixel(x,y).SetClamp(p.r*xx, p.g*xx, p.b*xx);
+         
+         // hey look what i found
+         
+         // I assume this interpolates p to grayP?? the function's a
+            // bit confusing. no idea what t does but it seems to
+            // work like this (does NOT work if you just pass factor)
+         GetPixel(x,y) = PixelLerp(GetPixel(x,y), grayP, 1-factor);
+      }
+   }
 }
 
 
 void Image::ChangeSaturation(double factor){
-	/* WORK HERE */
+   int x, y;
+   for (x = 0; x < Width(); x++) {
+      for (y = 0; y < Height(); y++) {
+         float l = GetPixel(x,y).Luminance();
+         Pixel gray = Pixel(l, l, l);
+         GetPixel(x,y) = PixelLerp(GetPixel(x,y), gray, 1-factor);
+      }
+   }
 }
 
 
