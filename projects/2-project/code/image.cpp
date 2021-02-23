@@ -126,12 +126,24 @@ void Image::ExtractChannel(int channel){
 
 
 void Image::Quantize (int nbits){
-	/* WORK HERE */
+   for (int x = 0; x < Width(); x++) {
+      for (int y = 0; y < Height(); y++) {
+         GetPixel(x,y) = PixelQuant(GetPixel(x,y), nbits);
+      }
+   }
 }
 
 Image* Image::Crop(int x, int y, int w, int h){
-	/* WORK HERE */
-	return NULL;
+   Image* crop = new Image(w, h);
+   int i, j, xPos, yPos;
+   for (xPos = x, i = 0; xPos < x + w; xPos++) {
+      for (yPos = y, j = 0; yPos < y + h; yPos++) {
+         crop->GetPixel(i, j) = GetPixel(xPos,yPos);
+         j++;
+      }
+      i++;
+   }
+   return crop;
 }
 
 
