@@ -38,16 +38,25 @@ Image::Image (int width_, int height_){
     assert(data.raw != NULL);
 }
 
+//Image::Image (const Image& src){
+//	width           = src.width;
+//	height          = src.height;
+//	num_pixels      = width * height;
+//	sampling_method = IMAGE_SAMPLING_POINT;
+//
+//	data.raw = new uint8_t[num_pixels*4];
+//
+//	//memcpy(data.raw, src.data.raw, num_pixels);
+//	*data.raw = *src.data.raw;
+//}
 Image::Image (const Image& src){
-	width           = src.width;
-	height          = src.height;
-	num_pixels      = width * height;
-	sampling_method = IMAGE_SAMPLING_POINT;
-	
-	data.raw = new uint8_t[num_pixels*4];
-	
-	//memcpy(data.raw, src.data.raw, num_pixels);
-	*data.raw = *src.data.raw;
+   width = src.width;
+   height = src.height;
+   num_pixels = width * height;
+   sampling_method =
+   IMAGE_SAMPLING_POINT;
+   data.raw = new uint8_t[num_pixels*4];
+   memcpy(data.raw, src.data.raw, num_pixels*4); //NEW, use this to copy
 }
 
 Image::Image (char* fname){
@@ -146,9 +155,30 @@ Image* Image::Crop(int x, int y, int w, int h){
    return crop;
 }
 
-// TODO: THIS
+// TODO: seems funky - find different way of adding noise
 void Image::AddNoise (double factor){
-	/* WORK HERE */
+   int x, y;
+   // salt and pepper noise; okay, but looks a bit funky
+//   for (x = 0; x < Width(); x++) {
+//      for (y = 0; y < Height(); y++) {
+//         double prob = rand() % 100 + 1;
+//         if (prob / 100 < factor) {
+//            if (rand() % 2 == 0) {
+//               GetPixel(x,y) = Pixel(0,0,0);
+//            } else {
+//               GetPixel(x,y) = Pixel(255, 255, 255);
+//            }
+//         }
+//      }
+//   }
+   
+   // color noise
+   for (x = 0; x < Width(); x++) {
+      for (y = 0; y < Height(); y++) {
+         Pixel noise = Pixel((rand() % 256) * factor, (rand() % 256) * factor, (rand() % 256) * factor);
+         GetPixel(x,y) = GetPixel(x,y) + noise;
+      }
+   }
 }
 
 void Image::ChangeContrast (double factor){
@@ -252,8 +282,58 @@ void Image::Sharpen(int n){
 	/* WORK HERE */
 }
 
-void Image::EdgeDetect(){
-	/* WORK HERE */
+void Image::EdgeDetect(){  // basic, from lecture
+   int x, y, i, j;
+   float r, g, b;
+   Image* img = new Image(*this);
+//   int F[3][3] = {{-1, -1, -1}, {-1, 8, -1}, {-1, -1, -1}};
+//   for (x = 1; x < Width() - 1; x++) {
+//      for (y = 1; y < Height() - 1; y++) {
+//         r=g=b=0;
+//         for (i = -1; i <= 1; i++) {
+//            for (j = -1; j <= 1; j++) {
+//               Pixel p = GetPixel(x+i, y+j);
+//               r += p.r*F[1+i][1+j];
+//               g += p.g*F[1+i][1+j];
+//               b += p.b*F[1+i][1+j];
+//            }
+//         }
+//         img->GetPixel(x,y) = Pixel(r, g, b);
+//      }
+//   }
+   int Gx[3][3] = {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}};
+   int Gy[3][3] = {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}};
+   for (x = 1; x < Width() - 1; x++) {
+      for (y = 1; y < Height() - 1; y++) {
+         r=g=b=0;
+         for (i = -1; i <= 1; i++) {
+            for (j = -1; j <= 1; j++) {
+               Pixel p = GetPixel(x+i, y+j);
+               r += p.r*Gx[1+i][1+j];
+               g += p.g*Gx[1+i][1+j];
+               b += p.b*Gx[1+i][1+j];
+            }
+         }
+         img->GetPixel(x,y) = Pixel(r, g, b);
+      }
+   }
+   for (x = 1; x < Width() - 1; x++) {
+      for (y = 1; y < Height() - 1; y++) {
+         r=g=b=0;
+         for (i = -1; i <= 1; i++) {
+            for (j = -1; j <= 1; j++) {
+               Pixel p = GetPixel(x+i, y+j);
+               r += p.r*Gy[1+i][1+j];
+               g += p.g*Gy[1+i][1+j];
+               b += p.b*Gy[1+i][1+j];
+            }
+         }
+         img->GetPixel(x,y) = Pixel(r, g, b);
+      }
+   }
+   
+   
+   this->data.raw = img->data.raw;
 }
 
 Image* Image::Scale(double sx, double sy){
