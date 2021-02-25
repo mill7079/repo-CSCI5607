@@ -284,7 +284,7 @@ void Image::Sharpen(int n){
 
 void Image::EdgeDetect(){  // basic, from lecture
    int x, y, i, j;
-   float r, g, b;
+   float rx, gx, bx, ry, gy, by;
    Image* img = new Image(*this);
 //   int F[3][3] = {{-1, -1, -1}, {-1, 8, -1}, {-1, -1, -1}};
 //   for (x = 1; x < Width() - 1; x++) {
@@ -301,34 +301,27 @@ void Image::EdgeDetect(){  // basic, from lecture
 //         img->GetPixel(x,y) = Pixel(r, g, b);
 //      }
 //   }
-   int Gx[3][3] = {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}};
-   int Gy[3][3] = {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}};
+   int sobelX[3][3] = {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}};
+   int sobelY[3][3] = {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}};
    for (x = 1; x < Width() - 1; x++) {
       for (y = 1; y < Height() - 1; y++) {
-         r=g=b=0;
+         rx=gx=bx=ry=gy=by=0;
          for (i = -1; i <= 1; i++) {
             for (j = -1; j <= 1; j++) {
                Pixel p = GetPixel(x+i, y+j);
-               r += p.r*Gx[1+i][1+j];
-               g += p.g*Gx[1+i][1+j];
-               b += p.b*Gx[1+i][1+j];
+               rx += p.r*sobelX[1+i][1+j];
+               gx += p.g*sobelX[1+i][1+j];
+               bx += p.b*sobelX[1+i][1+j];
+               
+               ry += p.r*sobelY[1+i][1+j];
+               gy += p.g*sobelY[1+i][1+j];
+               by += p.b*sobelY[1+i][1+j];
             }
          }
-         img->GetPixel(x,y) = Pixel(r, g, b);
-      }
-   }
-   for (x = 1; x < Width() - 1; x++) {
-      for (y = 1; y < Height() - 1; y++) {
-         r=g=b=0;
-         for (i = -1; i <= 1; i++) {
-            for (j = -1; j <= 1; j++) {
-               Pixel p = GetPixel(x+i, y+j);
-               r += p.r*Gy[1+i][1+j];
-               g += p.g*Gy[1+i][1+j];
-               b += p.b*Gy[1+i][1+j];
-            }
-         }
-         img->GetPixel(x,y) = Pixel(r, g, b);
+         
+         img->GetPixel(x,y) = Pixel(sqrt(pow(rx, 2) + pow(ry,2)),
+                                    sqrt(pow(gx, 2) + pow(gy,2)),
+                                    sqrt(pow(bx, 2) + pow(by,2)));
       }
    }
    
