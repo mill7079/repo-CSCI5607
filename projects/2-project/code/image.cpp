@@ -286,23 +286,10 @@ void Image::EdgeDetect(){  // basic, from lecture
    int x, y, i, j;
    float rx, gx, bx, ry, gy, by;
    Image* img = new Image(*this);
-//   int F[3][3] = {{-1, -1, -1}, {-1, 8, -1}, {-1, -1, -1}};
-//   for (x = 1; x < Width() - 1; x++) {
-//      for (y = 1; y < Height() - 1; y++) {
-//         r=g=b=0;
-//         for (i = -1; i <= 1; i++) {
-//            for (j = -1; j <= 1; j++) {
-//               Pixel p = GetPixel(x+i, y+j);
-//               r += p.r*F[1+i][1+j];
-//               g += p.g*F[1+i][1+j];
-//               b += p.b*F[1+i][1+j];
-//            }
-//         }
-//         img->GetPixel(x,y) = Pixel(r, g, b);
-//      }
-//   }
+   
    int sobelX[3][3] = {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}};
    int sobelY[3][3] = {{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}};
+   
    for (x = 1; x < Width() - 1; x++) {
       for (y = 1; y < Height() - 1; y++) {
          rx=gx=bx=ry=gy=by=0;
@@ -319,9 +306,12 @@ void Image::EdgeDetect(){  // basic, from lecture
             }
          }
          
-         img->GetPixel(x,y) = Pixel(sqrt(pow(rx, 2) + pow(ry,2)),
-                                    sqrt(pow(gx, 2) + pow(gy,2)),
-                                    sqrt(pow(bx, 2) + pow(by,2)));
+//         img->GetPixel(x,y) = Pixel(sqrt(pow(rx, 2) + pow(ry,2)),
+//                                    sqrt(pow(gx, 2) + pow(gy,2)),
+//                                    sqrt(pow(bx, 2) + pow(by,2)));
+         img->GetPixel(x,y).SetClamp(sqrt(pow(rx, 2) + pow(ry,2)) + 0.5,
+                                    sqrt(pow(gx, 2) + pow(gy,2)) + 0.5,
+                                    sqrt(pow(bx, 2) + pow(by,2)) + 0.5);
       }
    }
    
