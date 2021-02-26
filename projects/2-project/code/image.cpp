@@ -176,7 +176,8 @@ void Image::AddNoise (double factor){
    for (x = 0; x < Width(); x++) {
       for (y = 0; y < Height(); y++) {
          Pixel noise = Pixel((rand() % 256) * factor, (rand() % 256) * factor, (rand() % 256) * factor);
-         GetPixel(x,y) = GetPixel(x,y) + noise;
+//         GetPixel(x,y) = GetPixel(x,y) + noise;  // this makes things brighter, dumbass
+         GetPixel(x,y) = GetPixel(x,y)*(1-factor) + noise;
       }
    }
 }
@@ -241,7 +242,10 @@ void Image::ChangeSaturation(double factor){
 
 //For full credit, check that your dithers aren't making the pictures systematically brighter or darker
 void Image::RandomDither (int nbits){
-	/* WORK HERE */
+   // 2 ^ (bits shrunk by)
+   float h = pow(2, 8-nbits);
+   AddNoise(0.004 * h); // this seems to look the best? not sure if it's right
+   Quantize(nbits);
 }
 
 //This bayer method gives the quantization thresholds for an ordered dither.
@@ -272,17 +276,69 @@ void Image::FloydSteinbergDither(int nbits){
 }
 
 void Image::Blur(int n){
-   // float r, g, b; //I got better results converting everything to floats, then converting back to bytes
-	// Image* img_copy = new Image(*this); //This is will copying the image, so you can read the orginal values for filtering (
+   float r, g, b; //I got better results converting everything to floats, then converting back to bytes
+   int x, y, i, j;
+   Image* img_copy = new Image(*this); //This is will copying the image, so you can read the orginal values for filtering (
                                           //  ... don't forget to delete the copy!
-	/* WORK HERE */
+
+   // calculate gaussian matrix
+   int N = 2 * n + 1;
+   float sigma = N / 2.0f;
+   float sum = 0;
+   float gauss[N][N];
+   
+   for (x = 0; x < N; x++) {
+      for (y = 0; y < N; y++) {
+         float a = 1.0f / (2 * M_PI * pow(sigma, 2));
+         float b = -(pow((N/2)-x,2) + pow((N/2)-y,2)) / (2.0f*pow(sigma,2));
+         gauss[x][y] = a * exp(b);
+         sum += gauss[x][y];
+      }
+   }
+   
+   // normalize
+   for (x = 0; x < N; x++) {
+      for (y = 0; y < N; y++) {
+         gauss[x][y] /= sum;
+      }
+   }
+   
+   // convolve
+   for (x = 0; x < Width(); x++) {
+      for (y = 0; y < Height(); y++) {
+         r=g=b=0;
+         for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++) {
+               // clamp x/y values to bounds of image
+               // for some reason it doesn't recognize the std::clamp function
+               // so here we are
+               // but it should extend the filter to the image bounds
+               int xClamp = x + i - N/2;
+               if (xClamp < 0) xClamp = 0;
+               else if (xClamp >= Width()) xClamp = Width()-1;
+               
+               int yClamp = y + j - N/2;
+               if (yClamp < 0) yClamp = 0;
+               else if (yClamp >= Height()) yClamp = Height()-1;
+               
+               Pixel p = GetPixel(xClamp, yClamp);
+               r += p.r*gauss[i][j];
+               g += p.g*gauss[i][j];
+               b += p.b*gauss[i][j];
+            }
+         }
+         img_copy->GetPixel(x,y).SetClamp(r,g,b);
+      }
+   }
+   this->data.raw = img_copy->data.raw;
+//   delete img_copy;  // this causes Issues
 }
 
 void Image::Sharpen(int n){
 	/* WORK HERE */
 }
 
-void Image::EdgeDetect(){  // basic, from lecture
+void Image::EdgeDetect(){  // sobel
    int x, y, i, j;
    float rx, gx, bx, ry, gy, by;
    Image* img = new Image(*this);
@@ -306,9 +362,6 @@ void Image::EdgeDetect(){  // basic, from lecture
             }
          }
          
-//         img->GetPixel(x,y) = Pixel(sqrt(pow(rx, 2) + pow(ry,2)),
-//                                    sqrt(pow(gx, 2) + pow(gy,2)),
-//                                    sqrt(pow(bx, 2) + pow(by,2)));
          img->GetPixel(x,y).SetClamp(sqrt(pow(rx, 2) + pow(ry,2)) + 0.5,
                                     sqrt(pow(gx, 2) + pow(gy,2)) + 0.5,
                                     sqrt(pow(bx, 2) + pow(by,2)) + 0.5);
@@ -317,6 +370,7 @@ void Image::EdgeDetect(){  // basic, from lecture
    
    
    this->data.raw = img->data.raw;
+//   delete img;
 }
 
 Image* Image::Scale(double sx, double sy){
