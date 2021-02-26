@@ -272,7 +272,49 @@ const double
     DELTA = 1.0 / 16.0;
 
 void Image::FloydSteinbergDither(int nbits){
-	/* WORK HERE */
+   int x, y;
+   for (y = 0; y < Height(); y++) {
+      for (x = 0; x < Width(); x++) {
+         Pixel p = GetPixel(x,y);
+         Pixel qP = PixelQuant(p, nbits);
+//         Pixel error = Pixel(p.r - qP.r, p.g - qP.g, p.b - qP.b);
+         Pixel error;
+         error.SetClamp(p.r - qP.r, p.g - qP.g, p.b - qP.b);
+         GetPixel(x,y) = qP;
+
+         if (ValidCoord(x+1, y)) {
+//            GetPixel(x+1, y) = GetPixel(x+1, y) + error * ALPHA;
+            Pixel cur = GetPixel(x+1, y);
+            GetPixel(x+1, y).SetClamp(cur.r + error.r * ALPHA,
+                                      cur.g + error.g * ALPHA,
+                                      cur.b + error.b * ALPHA);
+         }
+
+         if (ValidCoord(x-1, y+1)) {
+//            GetPixel(x-1, y+1) = GetPixel(x-1, y+1) + error * BETA;
+            Pixel cur = GetPixel(x-1, y+1);
+            GetPixel(x-1, y+1).SetClamp(cur.r + error.r * BETA,
+                                      cur.g + error.g * BETA,
+                                      cur.b + error.b * BETA);
+         }
+
+         if (ValidCoord(x, y+1)) {
+//            GetPixel(x, y+1) = GetPixel(x, y+1) + error * GAMMA;
+            Pixel cur = GetPixel(x, y+1);
+            GetPixel(x, y+1).SetClamp(cur.r + error.r * GAMMA,
+                                      cur.g + error.g * GAMMA,
+                                      cur.b + error.b * GAMMA);
+         }
+
+         if (ValidCoord(x+1, y+1)) {
+//            GetPixel(x+1, y+1) = GetPixel(x+1, y+1) + error * DELTA;
+            Pixel cur = GetPixel(x+1, y+1);
+            GetPixel(x+1, y+1).SetClamp(cur.r + error.r * DELTA,
+                                      cur.g + error.g * DELTA,
+                                      cur.b + error.b * DELTA);
+         }
+      }
+   }
 }
 
 void Image::Blur(int n){
@@ -335,7 +377,18 @@ void Image::Blur(int n){
 }
 
 void Image::Sharpen(int n){
-	/* WORK HERE */
+	// extrapolate from blurred image - use pixellerp?
+   Image* img_copy = new Image(*this);
+   img_copy->Blur(n);
+   
+   int x, y;
+   for (x = 0; x < Width(); x++) {
+      for (y = 0; y < Height(); y++) {
+         Pixel p = GetPixel(x,y);
+         Pixel b = img_copy -> GetPixel(x,y);
+         GetPixel(x,y) = PixelLerp(b, p, n);
+      }
+   }
 }
 
 void Image::EdgeDetect(){  // sobel
