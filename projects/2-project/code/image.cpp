@@ -427,8 +427,15 @@ void Image::EdgeDetect(){  // sobel
 }
 
 Image* Image::Scale(double sx, double sy){
-	/* WORK HERE */
-	return NULL;
+   Image* img = new Image(Width() * sx, Height() * sy);
+   int x, y;
+   for (x = 0; x < img->Width(); x++) {
+      for (y = 0; y < img->Height(); y++) {
+         img->GetPixel(x,y) = Sample(x/sx, y/sy);
+      }
+   }
+   
+	return img;
 }
 
 Image* Image::Rotate(double angle){
@@ -450,6 +457,16 @@ void Image::SetSamplingMethod(int method){
 
 
 Pixel Image::Sample (double u, double v){
-   /* WORK HERE */
-   return Pixel();
+   switch (sampling_method) {
+      case IMAGE_SAMPLING_POINT:
+         return GetPixel((int)u, (int)v);  // professor had *width and *height in slides? not sure why
+      case IMAGE_SAMPLING_BILINEAR:  // TODO: THIS
+         // get four nearest pixels, return bilinear average
+         return Pixel();
+      case IMAGE_SAMPLING_GAUSSIAN:  // TODO: THIS
+         // get all neary pixels, returnn gaussian-weighted average
+         return Pixel();
+      default:
+         return Pixel();
+   }
 }
