@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <iostream>
 
 #include <fstream>
 using namespace std;
@@ -227,7 +228,7 @@ void Image::ChangeContrast (double factor){
    }
 }
 
-
+// similar to contrast
 void Image::ChangeSaturation(double factor){
    int x, y;
    for (x = 0; x < Width(); x++) {
@@ -273,45 +274,49 @@ const double
 
 void Image::FloydSteinbergDither(int nbits){
    int x, y;
+   float er, eg, eb;
    for (y = 0; y < Height(); y++) {
       for (x = 0; x < Width(); x++) {
          Pixel p = GetPixel(x,y);
          Pixel qP = PixelQuant(p, nbits);
 //         Pixel error = Pixel(p.r - qP.r, p.g - qP.g, p.b - qP.b);
-         Pixel error;
-         error.SetClamp(p.r - qP.r, p.g - qP.g, p.b - qP.b);
+//         Pixel error;
+//         error.SetClamp(p.r - qP.r, p.g - qP.g, p.b - qP.b);
+         er = p.r - qP.r;
+         eg = p.g - qP.g;
+         eb = p.b - qP.b;
          GetPixel(x,y) = qP;
 
          if (ValidCoord(x+1, y)) {
 //            GetPixel(x+1, y) = GetPixel(x+1, y) + error * ALPHA;
             Pixel cur = GetPixel(x+1, y);
-            GetPixel(x+1, y).SetClamp(cur.r + error.r * ALPHA,
-                                      cur.g + error.g * ALPHA,
-                                      cur.b + error.b * ALPHA);
+            GetPixel(x+1, y).SetClamp(cur.r + er * ALPHA,
+                                      cur.g + eg * ALPHA,
+                                      cur.b + eb * ALPHA);
          }
 
          if (ValidCoord(x-1, y+1)) {
 //            GetPixel(x-1, y+1) = GetPixel(x-1, y+1) + error * BETA;
             Pixel cur = GetPixel(x-1, y+1);
-            GetPixel(x-1, y+1).SetClamp(cur.r + error.r * BETA,
-                                      cur.g + error.g * BETA,
-                                      cur.b + error.b * BETA);
+            GetPixel(x-1, y+1).SetClamp(cur.r + er * BETA,
+                                      cur.g + eg * BETA,
+                                      cur.b + eb * BETA);
          }
 
          if (ValidCoord(x, y+1)) {
 //            GetPixel(x, y+1) = GetPixel(x, y+1) + error * GAMMA;
             Pixel cur = GetPixel(x, y+1);
-            GetPixel(x, y+1).SetClamp(cur.r + error.r * GAMMA,
-                                      cur.g + error.g * GAMMA,
-                                      cur.b + error.b * GAMMA);
+            GetPixel(x, y+1).SetClamp(cur.r + er * GAMMA,
+                                      cur.g + eg * GAMMA,
+                                      cur.b + eb * GAMMA);
          }
 
          if (ValidCoord(x+1, y+1)) {
 //            GetPixel(x+1, y+1) = GetPixel(x+1, y+1) + error * DELTA;
             Pixel cur = GetPixel(x+1, y+1);
-            GetPixel(x+1, y+1).SetClamp(cur.r + error.r * DELTA,
-                                      cur.g + error.g * DELTA,
-                                      cur.b + error.b * DELTA);
+            GetPixel(x+1, y+1).SetClamp(cur.r + er * DELTA,
+                                      cur.g + eg * DELTA,
+                                      cur.b + eb * DELTA);
          }
       }
    }
@@ -320,8 +325,7 @@ void Image::FloydSteinbergDither(int nbits){
 void Image::Blur(int n){
    float r, g, b; //I got better results converting everything to floats, then converting back to bytes
    int x, y, i, j;
-   Image* img_copy = new Image(*this); //This is will copying the image, so you can read the orginal values for filtering (
-                                          //  ... don't forget to delete the copy!
+   Image* img_copy = new Image(*this); //This is will copying the image, so you can read the orginal values for filtering
 
    // calculate gaussian matrix
    int N = 2 * n + 1;
@@ -438,9 +442,48 @@ Image* Image::Scale(double sx, double sy){
 	return img;
 }
 
+// assumes angle given in degrees
 Image* Image::Rotate(double angle){
-	/* WORK HERE */
-	return NULL;
+   float ang = (angle*M_PI)/180;
+   
+   float nWidth = Width()*abs(cos(fmod(ang, 90))) + Height()*abs(sin(fmod(ang, 90)));
+   float nHeight = Width()*abs(sin(fmod(ang, 90))) + Height()*abs(cos(fmod(ang, 90)));
+   Image* img = new Image(nWidth, nHeight);
+//   float half_w = nWidth / 2;
+//   float half_h = nHeight / 2;
+   float half_w = Width() / 2;
+   float half_h = Height() / 2;
+   float diff_x = (nWidth - Width()) / 2;
+   float diff_y = (nHeight - Height()) / 2;
+   float n_halfw = nWidth / 2;
+   float n_halfh = nHeight / 2;
+//   cout << nWidth << " " << nHeight << endl;
+   
+   int x,y,u,v;
+   for (x = 0; x < img->Width(); x++) {
+      for (y = 0; y < img->Height(); y++) {
+//         float u = (x + diff_x - half_w)*cos(-ang) - (y + diff_y - half_h)*sin(-ang);
+//         float v = (x + diff_x - half_w)*sin(-ang) + (y + diff_y - half_h)*cos(-ang);
+//         float u = (x - half_w)*cos(-ang) - (y - half_h)*sin(-ang);
+//         float v = (x - half_w)*sin(-ang) + (y - half_h)*cos(-ang);
+//         float u = (x - n_halfw)*cos(-ang) - y*sin(-ang);
+//         float v = (x - n_halfw)*sin(-ang) + y*cos(-ang);
+//         cout << u << " " << v << endl;
+         
+         float u = (x+half_w)*cos(-ang) - half_w - (y+half_h)*sin(-ang) - half_h;
+         float v = (x+half_w)*sin(-ang) - half_w + (y+half_h)*cos(-ang) - half_h;
+
+         
+         if (!ValidCoord(u,v)) {
+            img->GetPixel(x,y).Set(0,0,0);
+         } else {
+//            cout << "valid" << endl;
+            img->GetPixel(x,y) = Sample(u,v);
+         }
+      }
+   }
+   
+	return img;
 }
 
 void Image::Fun(){
@@ -457,16 +500,73 @@ void Image::SetSamplingMethod(int method){
 
 
 Pixel Image::Sample (double u, double v){
-   switch (sampling_method) {
-      case IMAGE_SAMPLING_POINT:
-         return GetPixel((int)u, (int)v);  // professor had *width and *height in slides? not sure why
-      case IMAGE_SAMPLING_BILINEAR:  // TODO: THIS
-         // get four nearest pixels, return bilinear average
-         return Pixel();
-      case IMAGE_SAMPLING_GAUSSIAN:  // TODO: THIS
-         // get all neary pixels, returnn gaussian-weighted average
-         return Pixel();
-      default:
-         return Pixel();
+   if (sampling_method == IMAGE_SAMPLING_POINT) {
+      return GetPixel((int)u, (int)v);  // professor had *width and *height in slides? not sure why
+   } else if (sampling_method == IMAGE_SAMPLING_BILINEAR) {
+      // get four nearest pixels, return bilinear average
+      // if nearest is the floor of u and v then four nearest should be
+         // some combo of floor/ceil?
+      
+      // make sure pixels are in bounds since clamp still doesn't work
+      Pixel p1, p2, p3, p4;
+      if (ValidCoord((int)u, (int)v)) {  // upper left
+         p1 = GetPixel((int)u, (int)v);
+      } else {
+         p1 = Pixel(127,127,127);  // idk what to do for this
+      }
+      
+      if (ValidCoord((int)(u+0.5), (int)(v+0.5))) {  // lower right
+         p2 = GetPixel((int)(u+0.5), (int)(v+0.5));
+      } else {
+         p2 = Pixel(127,127,127);
+      }
+      
+      if (ValidCoord((int)(u+0.5), (int)v)) {  // upper right
+         p3 = GetPixel((int)(u+0.5), (int)v);
+      } else {
+         p3 = Pixel(127,127,127);
+      }
+      
+      if (ValidCoord((int)u, (int)(v+0.5))) {  // lower left
+         p4 = GetPixel((int)u, (int)(v+0.5));
+      } else {
+         p4 = Pixel(127,127,127);
+      }
+      
+      // interpolate?
+      Pixel p5 = PixelLerp(p1, p3, (int)(u+0.5) - u);
+      Pixel p6 = PixelLerp(p4, p2, (int)(u+0.5) - u);
+      
+      return PixelLerp(p5, p6, (int)(v+0.5) - v);
+      // HELL YEAH
+   } else if (sampling_method == IMAGE_SAMPLING_GAUSSIAN) {
+      // calculate gaussian matrix
+      int N = 3;
+      float sigma = 1;
+      float sum = 0;
+      float gauss[N][N];
+      int x,y;
+      
+      for (x = 0; x < N; x++) {
+         for (y = 0; y < N; y++) {
+            float a = 1.0f / (2 * M_PI * pow(sigma, 2));
+            float b = -(pow((N/2)-x,2) + pow((N/2)-y,2)) / (2.0f*pow(sigma,2));
+            gauss[x][y] = a * exp(b);
+            sum += gauss[x][y];
+         }
+      }
+      
+      // normalize
+      for (x = 0; x < N; x++) {
+         for (y = 0; y < N; y++) {
+            gauss[x][y] /= sum;
+         }
+      }
+      
+      
+      
+      return Pixel();
+   } else {
+      return Pixel();  // shouldn't get here
    }
 }
