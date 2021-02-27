@@ -442,49 +442,89 @@ Image* Image::Scale(double sx, double sy){
 	return img;
 }
 
-// assumes angle given in degrees
 Image* Image::Rotate(double angle){
+   cout << Width() << " " << Height() << endl;
    float ang = (angle*M_PI)/180;
    
    float nWidth = Width()*abs(cos(fmod(ang, 90))) + Height()*abs(sin(fmod(ang, 90)));
    float nHeight = Width()*abs(sin(fmod(ang, 90))) + Height()*abs(cos(fmod(ang, 90)));
    Image* img = new Image(nWidth, nHeight);
-//   float half_w = nWidth / 2;
-//   float half_h = nHeight / 2;
-   float half_w = Width() / 2;
-   float half_h = Height() / 2;
-   float diff_x = (nWidth - Width()) / 2;
-   float diff_y = (nHeight - Height()) / 2;
-   float n_halfw = nWidth / 2;
-   float n_halfh = nHeight / 2;
+   int half_w = nWidth / 2;
+   int half_h = nHeight / 2;
+//   float half_w = Width() / 2;
+//   float half_h = Height() / 2;
+//   float diff_x = (nWidth - Width()) / 16;
+//   float diff_y = (nHeight - Height()) / 16;
+//   float n_halfw = nWidth / 2;
+//   float n_halfh = nHeight / 2;
 //   cout << nWidth << " " << nHeight << endl;
    
    int x,y,u,v;
-   for (x = 0; x < img->Width(); x++) {
-      for (y = 0; y < img->Height(); y++) {
-//         float u = (x + diff_x - half_w)*cos(-ang) - (y + diff_y - half_h)*sin(-ang);
-//         float v = (x + diff_x - half_w)*sin(-ang) + (y + diff_y - half_h)*cos(-ang);
-//         float u = (x - half_w)*cos(-ang) - (y - half_h)*sin(-ang);
-//         float v = (x - half_w)*sin(-ang) + (y - half_h)*cos(-ang);
-//         float u = (x - n_halfw)*cos(-ang) - y*sin(-ang);
-//         float v = (x - n_halfw)*sin(-ang) + y*cos(-ang);
-//         cout << u << " " << v << endl;
+   for (x = -half_w; x < half_w; x++) {
+      for (y = -half_h; y < half_h; y++) {
+         int xCoord = x + half_w;
+         int yCoord = y + half_h;
          
-         float u = (x+half_w)*cos(-ang) - half_w - (y+half_h)*sin(-ang) - half_h;
-         float v = (x+half_w)*sin(-ang) - half_w + (y+half_h)*cos(-ang) - half_h;
-
-         
+//         float u = (x+diff_x)*cos(-ang) - (y+diff_y)*sin(-ang) + (Width() / 2);
+//         float v = (x+diff_x)*sin(-ang) + (y+diff_y)*cos(-ang) + (Width() / 2);
+         float u = (x)*cos(-ang) - (y)*sin(-ang) + (Width() / 2);
+         float v = (x)*sin(-ang) + (y)*cos(-ang) + (Height() / 2);
          if (!ValidCoord(u,v)) {
-            img->GetPixel(x,y).Set(0,0,0);
+            img->GetPixel(xCoord,yCoord).Set(0,0,0);
          } else {
-//            cout << "valid" << endl;
-            img->GetPixel(x,y) = Sample(u,v);
+//            cout << "valid x: " << xCoord << " y: " << yCoord << endl;
+            img->GetPixel(xCoord,yCoord) = Sample(u,v);
+//            cout << xCoord << " " << yCoord << endl;
          }
       }
    }
    
-	return img;
+   return img;
 }
+
+// assumes angle given in degrees
+//Image* Image::Rotate(double angle){
+//   float ang = (angle*M_PI)/180;
+//
+//   float nWidth = Width()*abs(cos(fmod(ang, 90))) + Height()*abs(sin(fmod(ang, 90)));
+//   float nHeight = Width()*abs(sin(fmod(ang, 90))) + Height()*abs(cos(fmod(ang, 90)));
+//   Image* img = new Image(nWidth, nHeight);
+////   float half_w = nWidth / 2;
+////   float half_h = nHeight / 2;
+//   float half_w = Width() / 2;
+//   float half_h = Height() / 2;
+//   float diff_x = (nWidth - Width()) / 2;
+//   float diff_y = (nHeight - Height()) / 2;
+//   float n_halfw = nWidth / 2;
+//   float n_halfh = nHeight / 2;
+////   cout << nWidth << " " << nHeight << endl;
+//
+//   int x,y,u,v;
+//   for (x = 0; x < img->Width(); x++) {
+//      for (y = 0; y < img->Height(); y++) {
+////         float u = (x + diff_x - half_w)*cos(-ang) - (y + diff_y - half_h)*sin(-ang);
+////         float v = (x + diff_x - half_w)*sin(-ang) + (y + diff_y - half_h)*cos(-ang);
+////         float u = (x - half_w)*cos(-ang) - (y - half_h)*sin(-ang);
+////         float v = (x - half_w)*sin(-ang) + (y - half_h)*cos(-ang);
+////         float u = (x - n_halfw)*cos(-ang) - y*sin(-ang);
+////         float v = (x - n_halfw)*sin(-ang) + y*cos(-ang);
+////         cout << u << " " << v << endl;
+//
+//         float u = (x+half_w)*cos(-ang) - half_w - (y+half_h)*sin(-ang) - half_h;
+//         float v = (x+half_w)*sin(-ang) - half_w + (y+half_h)*cos(-ang) - half_h;
+//
+//
+//         if (!ValidCoord(u,v)) {
+//            img->GetPixel(x,y).Set(0,0,0);
+//         } else {
+////            cout << "valid" << endl;
+//            img->GetPixel(x,y) = Sample(u,v);
+//         }
+//      }
+//   }
+//
+//	return img;
+//}
 
 void Image::Fun(){
 	/* WORK HERE */
