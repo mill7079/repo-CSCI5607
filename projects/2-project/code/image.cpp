@@ -155,7 +155,6 @@ Image* Image::Crop(int x, int y, int w, int h){
    return crop;
 }
 
-// TODO: seems funky - find different way of adding noise
 void Image::AddNoise (double factor){
    int x, y;
    // salt and pepper noise; okay, but looks a bit funky
