@@ -395,7 +395,7 @@ void Image::Sharpen(int n){
    }
 }
 
-void Image::EdgeDetect(){  // sobel
+void Image::EdgeDetect(){  // sobel :)
    int x, y, i, j;
    float rx, gx, bx, ry, gy, by;
    Image* img = new Image(*this);
@@ -563,9 +563,22 @@ Pixel Image::Sample (double u, double v){
          }
       }
       
-      
-      
-      return Pixel();
+      // apply matrix
+      int i, j;
+      float r, g, b;
+      r=g=b=0;
+      for (i = -1; i <= 1; i++) {
+         for (j = -1; j <= 1; j++) {
+            if (ValidCoord(u+i, v+j)) {
+//               cout << "valid" << endl;
+               Pixel p = GetPixel(u+i, v+j);
+               r += p.r*gauss[i+1][j+1];
+               g += p.g*gauss[i+1][j+1];
+               b += p.b*gauss[i+1][j+1];
+            }
+         }
+      }
+      return Pixel(r, g, b);
    } else {
       return Pixel();  // shouldn't get here
    }
