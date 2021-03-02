@@ -126,6 +126,9 @@ void Image::ExtractChannel(int channel){
             case 2:
                GetPixel(x,y).Set(0, 0, p.b);
                break;
+            case 3:
+               GetPixel(x,y).Set(4.0f*p.r/5.0f, 0, p.b);
+               break;
             default:
                break;
          }
