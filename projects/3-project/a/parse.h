@@ -8,12 +8,29 @@
 
 #include <vector>
 
+struct material {
+   Color ambient, diffuse, specular, transmissive;
+   float ns, ior;
+   material(Color a, Color d, Color s, Color t, float n, float i) {
+      ambient = a;
+      diffuse = d;
+      specular = s;
+      transmissive = t;
+      ns = n;
+      ior = i;
+   }
+   
+   material(){}
+};
+
 struct sphere {
    vec3 pos;
    float r;
-   sphere(vec3 position, float radius) {
+   material mat;
+   sphere(vec3 position, float radius, material m) {
       pos = position;
       r = radius;
+      mat = m;
    }
 };
 
@@ -39,7 +56,8 @@ std::vector<sphere> spheres;
 
 // Material parameters
 Color background = Color(0,0,0);
-float material [14] = {0, 0, 0, 1, 1, 1, 0, 0, 0, 5, 0, 0, 0, 1};
+//float material [14] = {0, 0, 0, 1, 1, 1, 0, 0, 0, 5, 0, 0, 0, 1};
+material cur = material(Color(0,0,0), Color(1,1,1), Color(0,0,0), Color(0,0,0), 5, 1);
 
 // Light parameters
 Color ambient = Color(0,0,0);
@@ -69,7 +87,7 @@ void parseSceneFile(std::string fileName){
       // really wish c++ switch statements worked on strings...
       if (word == "sphere:") {
          input >> spherePos.x >> spherePos.y >> spherePos.z >> sphereRadius;
-         spheres.push_back(sphere(spherePos, sphereRadius));
+         spheres.push_back(sphere(spherePos, sphereRadius, cur));
       } else if (word == "camera_pos:") {
          input >> pos.x >> pos.y >> pos.z;
       } else if (word == "camera_fwd:") {
@@ -87,9 +105,25 @@ void parseSceneFile(std::string fileName){
       } else if (word == "background:") {
          input >> background.r >> background.g >> background.b;
       } else if (word == "material:") {
-         for (int i = 0; i < 14; i++) {
-            input >> material[i];
-         }
+//         for (int i = 0; i < 14; i++) {
+//            input >> material[i];
+//         }
+         float r, g, b, ns, ior;
+         Color a, d, s, t;
+         
+         input >> r >> g >> b;
+         a = Color(r, g, b);
+         
+         input >> r >> g >> b;
+         d = Color(r, g, b);
+         
+         input >> r >> g >> b >> ns;
+         s = Color(r, g, b);
+         
+         input >> r >> g >> b >> ior;
+         t = Color(r, g, b);
+         
+         cur = material (a, d, s, t, ns, ior);
       } else if (word == "directional_light:") {
          
       } else if (word == "point_light:") {

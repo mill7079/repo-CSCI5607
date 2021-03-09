@@ -16,8 +16,11 @@
 
 Color white = Color(1,1,1);
 
-bool raySphereIntersection(vec3 pos, vec3 dir) {
+//bool raySphereIntersection(vec3 pos, vec3 dir) {
+Color raySphereIntersection(vec3 pos, vec3 dir) {
 //   bool hit = false;
+   float minMag = -1;
+   Color color = background;
    for (sphere s : spheres) {
       vec3 toStart = (pos - s.pos);
       float a = dot(dir, dir);
@@ -31,12 +34,19 @@ bool raySphereIntersection(vec3 pos, vec3 dir) {
          float t1 = (-b - sqrt(det)) / (2*a);
          if (t0 > 0 || t1 > 0) {
 //            std::cout << "hit" << std::endl;
-            return true;
+//            return true;
+            if (toStart.length() < minMag || minMag == -1) {
+               minMag = toStart.length();
+               color = s.mat.diffuse;
+            }
+//            return s.mat.diffuse;
          }
       }
    }
 //   return hit;
-   return false;
+//   return false;
+//   return background;
+   return color;
 }
 
 int main(int argc, char** argv) {
@@ -61,11 +71,16 @@ int main(int argc, char** argv) {
       for (int j = 0; j < img_height; j++) {
          float u = (half_w - (width) * (i/width));
          float v = (half_h - (height) * (j/height));
+         
          vec3 p = pos - d*fwd + u*right + v*up;
          vec3 dir = (p - pos).normalized();
-         bool hit = raySphereIntersection(pos, dir);
-         if (hit) img.setPixel(i, j, white);
-         else img.setPixel(i, j, background);
+         
+//         bool hit = raySphereIntersection(pos, dir);
+//         if (hit) {
+//            img.setPixel(i, j, getColor());
+//         }
+//         else img.setPixel(i, j, background);
+         img.setPixel(i, j, raySphereIntersection(pos,dir));
       }
    }
    
