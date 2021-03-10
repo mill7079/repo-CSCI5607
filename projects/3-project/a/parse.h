@@ -34,6 +34,43 @@ struct sphere {
    }
 };
 
+struct light {
+   Color i;
+   vec3 pos, dir;
+   float a1, a2;
+   
+//   light () {
+//      i = Color(0,0,0);
+//   }
+};
+
+struct pointLight : light {
+   pointLight(Color intensity, vec3 position) {
+      i = intensity;
+      pos = position;
+   }
+};
+
+struct directionalLight : light {
+   directionalLight(Color intensity, vec3 direction) {
+      i = intensity;
+      dir = direction;
+   }
+};
+
+struct spotLight : light {
+   spotLight(Color intensity, vec3 position, vec3 direction, float angle1, float angle2) {
+      i = intensity;
+      pos = position;
+      dir = direction;
+      a1 = angle1;
+      a2 = angle2;
+   }
+};
+
+// i suppose these could have been classes couldn't they...whoops
+
+
 // Set default values for camera/scene parameters
 // From Homework 3
 
@@ -62,6 +99,7 @@ material cur = material(Color(0,0,0), Color(1,1,1), Color(0,0,0), Color(0,0,0), 
 // Light parameters
 Color ambient = Color(0,0,0);
 // TODO: figure out how to handle other light sources
+std::vector<light> lights;
 
 // Misc parameters
 int depth = 5;
@@ -125,11 +163,22 @@ void parseSceneFile(std::string fileName){
          
          cur = material (a, d, s, t, ns, ior);
       } else if (word == "directional_light:") {
-         
+         Color c;
+         vec3 d;
+         input >> c.r >> c.g >> c.b >> d.x >> d.y >> d.z;
+         lights.push_back(directionalLight(c,d));
       } else if (word == "point_light:") {
-         
+         Color c;
+         vec3 p;
+         input >> c.r >> c.g >> c.b >> p.x >> p.y >> p.z;
+         lights.push_back(pointLight(c, p));
       } else if (word == "spot_light:") {
-         
+         Color c;
+         vec3 p, d;
+         float a1, a2;
+         input >> c.r >> c.g >> c.b >> p.x >> p.y >> p.z >>
+         d.x >> d.y >> d.z >> a1 >> a2;
+         lights.push_back(spotLight(c, p, d, a1, a2));
       } else if (word == "ambient_light:") {
          input >> ambient.r >> ambient.g >> ambient.b;
       } else if (word == "max_depth:") {

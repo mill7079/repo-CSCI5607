@@ -16,10 +16,25 @@
 
 Color white = Color(1,1,1);
 
+Color getColor(vec3 point, sphere s) {
+   
+   Color color = Color(0,0,0);
+   vec3 n = point - s.pos;
+   n = n.normalized();
+   
+   color.r = ambient.r * s.mat.ambient.r;
+   color.g = ambient.g * s.mat.ambient.g;
+   color.b = ambient.b * s.mat.ambient.b;
+   
+   return color;
+}
+
 //bool raySphereIntersection(vec3 pos, vec3 dir) {
 Color raySphereIntersection(vec3 pos, vec3 dir) {
-//   bool hit = false;
    float minMag = -1;
+   vec3 point = vec3(0,0,0);
+   sphere hitSphere = sphere(point, 1, cur);
+   bool hit = false;
    Color color = background;
    for (sphere s : spheres) {
       vec3 toStart = (pos - s.pos);
@@ -33,20 +48,30 @@ Color raySphereIntersection(vec3 pos, vec3 dir) {
          float t0 = (-b + sqrt(det)) / (2*a);
          float t1 = (-b - sqrt(det)) / (2*a);
          if (t0 > 0 || t1 > 0) {
+            hit = true;
 //            std::cout << "hit" << std::endl;
 //            return true;
             if (toStart.length() < minMag || minMag == -1) {
                minMag = toStart.length();
-               color = s.mat.diffuse;
+               point = pos + fmax(t0,t1)*dir;  // maybe fmin? idk how t0 and t1 relate
+               hitSphere = s;
+//               color = s.mat.diffuse;
+//               color.r = s.mat.ambient.r + s.mat.diffuse.r + s.mat.specular.r;
+//               color.g = s.mat.ambient.g + s.mat.diffuse.g + s.mat.specular.g;
+//               color.b = s.mat.ambient.b + s.mat.diffuse.b + s.mat.specular.b;
             }
 //            return s.mat.diffuse;
          }
       }
    }
+   
 //   return hit;
 //   return false;
 //   return background;
-   return color;
+//   return color;
+//   return point;
+   if (!hit) return background;
+   return getColor(point, hitSphere);
 }
 
 int main(int argc, char** argv) {
@@ -80,7 +105,8 @@ int main(int argc, char** argv) {
 //            img.setPixel(i, j, getColor());
 //         }
 //         else img.setPixel(i, j, background);
-         img.setPixel(i, j, raySphereIntersection(pos,dir));
+//         img.setPixel(i, j, raySphereIntersection(pos,dir));
+         img.setPixel(i, j, raySphereIntersection(pos, dir));
       }
    }
    
