@@ -22,9 +22,29 @@ Color getColor(vec3 point, sphere s) {
    vec3 n = point - s.pos;
    n = n.normalized();
    
+//   vec3 v = (point - pos).normalized();
+//   vec3 v = point - pos;
+//   vec3 v = pos - point;
+   vec3 v = (pos - point).normalized();
+   
    color.r = ambient.r * s.mat.ambient.r;
    color.g = ambient.g * s.mat.ambient.g;
    color.b = ambient.b * s.mat.ambient.b;
+   
+   // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
+   for (light l : lights) {
+//      vec3 lDir = (point - l.pos).normalized();
+      vec3 lDir = (l.pos - point).normalized();
+//      vec3 lDir = l.pos - point;
+      vec3 h = (v+lDir).normalized();
+      
+      // attenuate with distance from light
+      float dSquare = pow((l.pos - point).length(), 2);
+      
+      color.r += (s.mat.diffuse.r * l.i.r * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.r * l.i.r * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+      color.g += (s.mat.diffuse.g * l.i.g * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.g * l.i.g * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+      color.b += (s.mat.diffuse.b * l.i.b * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.b * l.i.b * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+   }
    
    return color;
 }
@@ -53,7 +73,8 @@ Color raySphereIntersection(vec3 pos, vec3 dir) {
 //            return true;
             if (toStart.length() < minMag || minMag == -1) {
                minMag = toStart.length();
-               point = pos + fmax(t0,t1)*dir;  // maybe fmin? idk how t0 and t1 relate
+//               point = pos + fmax(t0,t1)*dir;  // maybe fmin? idk how t0 and t1 relate
+               point = pos + fmin(t0,t1)*dir;  // definitely fmin
                hitSphere = s;
 //               color = s.mat.diffuse;
 //               color.r = s.mat.ambient.r + s.mat.diffuse.r + s.mat.specular.r;
