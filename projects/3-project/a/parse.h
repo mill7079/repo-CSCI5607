@@ -32,6 +32,8 @@ struct sphere {
       r = radius;
       mat = m;
    }
+   
+   sphere() {}
 };
 
 struct light {

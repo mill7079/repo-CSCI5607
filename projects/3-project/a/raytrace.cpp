@@ -14,50 +14,36 @@
 // Scene parser with scene variables
 #include "parse.h"
 
-Color white = Color(1,1,1);
+#include <limits>
 
-Color getColor(vec3 point, sphere s) {
-   
-   Color color = Color(0,0,0);
-   vec3 n = point - s.pos;
-   n = n.normalized();
-   
-//   vec3 v = (point - pos).normalized();
-//   vec3 v = point - pos;
-//   vec3 v = pos - point;
-   vec3 v = (pos - point).normalized();
-   
-   color.r = ambient.r * s.mat.ambient.r;
-   color.g = ambient.g * s.mat.ambient.g;
-   color.b = ambient.b * s.mat.ambient.b;
-   
-   // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
-   for (light l : lights) {
-//      vec3 lDir = (point - l.pos).normalized();
-      vec3 lDir = (l.pos - point).normalized();
-//      vec3 lDir = l.pos - point;
-      vec3 h = (v+lDir).normalized();
-      
-      // attenuate with distance from light
-      float dSquare = pow((l.pos - point).length(), 2);
-      
-      color.r += (s.mat.diffuse.r * l.i.r * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.r * l.i.r * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
-      color.g += (s.mat.diffuse.g * l.i.g * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.g * l.i.g * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
-      color.b += (s.mat.diffuse.b * l.i.b * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.b * l.i.b * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+Color white = Color(1,1,1);
+float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
+
+// point of intersection, sphere intersected with
+struct intersection {
+   bool hit;
+   vec3 point;
+   sphere s;
+   intersection(bool h, vec3 p, sphere sph) {
+      hit = h;
+      point = p;
+      s = sph;
    }
-   
-   return color;
-}
+};
 
 //bool raySphereIntersection(vec3 pos, vec3 dir) {
-Color raySphereIntersection(vec3 pos, vec3 dir) {
-   float minMag = -1;
+//Color raySphereIntersection(vec3 pos, vec3 dir) {
+intersection raySphereIntersection(vec3 pos, vec3 dir) {
+//   float minMag = -1;
+   float minMag = INFINITY;
    vec3 point = vec3(0,0,0);
    sphere hitSphere = sphere(point, 1, cur);
    bool hit = false;
    Color color = background;
    for (sphere s : spheres) {
       vec3 toStart = (pos - s.pos);
+      if (toStart.length() >= minMag) continue;  // don't need to check intersection if there's a closer intersecting sphere
+      
       float a = dot(dir, dir);
       float b = 2 * dot(dir,toStart);
       float c = dot(toStart, toStart) - pow(s.r, 2);
@@ -69,30 +55,55 @@ Color raySphereIntersection(vec3 pos, vec3 dir) {
          float t1 = (-b - sqrt(det)) / (2*a);
          if (t0 > 0 || t1 > 0) {
             hit = true;
-//            std::cout << "hit" << std::endl;
-//            return true;
-            if (toStart.length() < minMag || minMag == -1) {
-               minMag = toStart.length();
+//            if (toStart.length() < minMag) {//} || minMag == -1) {
+            minMag = toStart.length();
 //               point = pos + fmax(t0,t1)*dir;  // maybe fmin? idk how t0 and t1 relate
-               point = pos + fmin(t0,t1)*dir;  // definitely fmin
-               hitSphere = s;
-//               color = s.mat.diffuse;
-//               color.r = s.mat.ambient.r + s.mat.diffuse.r + s.mat.specular.r;
-//               color.g = s.mat.ambient.g + s.mat.diffuse.g + s.mat.specular.g;
-//               color.b = s.mat.ambient.b + s.mat.diffuse.b + s.mat.specular.b;
-            }
-//            return s.mat.diffuse;
+            point = pos + fmin(t0,t1)*dir;  // definitely fmin
+            hitSphere = s;
+//            }
          }
       }
    }
    
-//   return hit;
-//   return false;
-//   return background;
-//   return color;
-//   return point;
-   if (!hit) return background;
-   return getColor(point, hitSphere);
+//   if (!hit) return background;
+//   return getColor(point, hitSphere);
+   return intersection(hit, point, hitSphere);
+}
+
+//Color getColor(vec3 point, sphere s) {
+Color getColor(intersection i) {
+   if (!i.hit) return background; // eye ray did not hit sphere
+   
+   vec3 point = i.point;
+   sphere s = i.s;
+   
+   Color color = Color(0,0,0);
+   vec3 n = point - s.pos;
+   n = n.normalized();
+   
+   vec3 v = (pos - point).normalized();
+   
+   color.r = ambient.r * s.mat.ambient.r;
+   color.g = ambient.g * s.mat.ambient.g;
+   color.b = ambient.b * s.mat.ambient.b;
+   
+   // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
+   for (light l : lights) {
+      vec3 pS = point + (displace * n);
+//      if (raySphereIntersection(point, (l.pos - point.normalized())).hit) continue;
+      if (raySphereIntersection(pS, (l.pos - point).normalized()).hit) continue;  // don't add light if point is in shadow
+      vec3 lDir = (l.pos - point).normalized();
+      vec3 h = (v+lDir).normalized();
+      
+      // attenuate with distance from light (1/d^2)
+      float dSquare = pow((l.pos - point).length(), 2);
+      
+      color.r += (s.mat.diffuse.r * l.i.r * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.r * l.i.r * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+      color.g += (s.mat.diffuse.g * l.i.g * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.g * l.i.g * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+      color.b += (s.mat.diffuse.b * l.i.b * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.b * l.i.b * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+   }
+   
+   return color;
 }
 
 int main(int argc, char** argv) {
@@ -127,7 +138,7 @@ int main(int argc, char** argv) {
 //         }
 //         else img.setPixel(i, j, background);
 //         img.setPixel(i, j, raySphereIntersection(pos,dir));
-         img.setPixel(i, j, raySphereIntersection(pos, dir));
+         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir)));
       }
    }
    
