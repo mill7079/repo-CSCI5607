@@ -46,7 +46,7 @@ Color ambient = Color(0,0,0);
 std::vector<light*> lights;
 
 // Misc parameters
-int depth = 5;
+int maxDepth = 5;
 float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
 
 
@@ -127,7 +127,7 @@ void parseSceneFile(std::string fileName){
       } else if (word == "ambient_light:") {
          input >> ambient.r >> ambient.g >> ambient.b;
       } else if (word == "max_depth:") {
-         input >> depth;
+         input >> maxDepth;
       } else {
          std::cout << "Command not recognized: " << word << std::endl;
       }

@@ -43,12 +43,9 @@ intersection raySphereIntersection(vec3 pos, vec3 dir) {
          float t1 = (-b - sqrt(det)) / (2*a);
          if (t0 > 0 || t1 > 0) {
             hit = true;
-//            if (toStart.length() < minMag) {//} || minMag == -1) {
             minMag = toStart.length();
-//               point = pos + fmax(t0,t1)*dir;  // maybe fmin? idk how t0 and t1 relate
-            point = pos + fmin(t0,t1)*dir;  // definitely fmin
+            point = pos + fmin(t0,t1)*dir;
             hitSphere = s;
-//            }
          }
       }
    }
@@ -59,7 +56,8 @@ intersection raySphereIntersection(vec3 pos, vec3 dir) {
 }
 
 //Color getColor(vec3 point, sphere s) {
-Color getColor(intersection i) {
+//Color getColor(intersection i) {
+Color getColor(intersection i, int depth) {
    if (!i.hit) return background; // eye ray did not hit sphere
    
    vec3 point = i.point;
@@ -78,9 +76,10 @@ Color getColor(intersection i) {
    vec3 pS = point + (displace * n);
    
    // start with ambient light
-   color.r = ambient.r * s.mat.ambient.r;
-   color.g = ambient.g * s.mat.ambient.g;
-   color.b = ambient.b * s.mat.ambient.b;
+//   color.r = ambient.r * s.mat.ambient.r;
+//   color.g = ambient.g * s.mat.ambient.g;
+//   color.b = ambient.b * s.mat.ambient.b;
+   color = ambient * s.mat.ambient;
    
    // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
    // calculate contributions for each light source
@@ -108,9 +107,10 @@ Color getColor(intersection i) {
       
       Color c = l->findLight(s, pS);
       
-      color.r += c.r;
-      color.g += c.g;
-      color.b += c.b;
+//      color.r += c.r;
+//      color.g += c.g;
+//      color.b += c.b;
+      color = color + c;
    }
    
    return color;
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
          vec3 p = pos - d*fwd + u*right + v*up;
          vec3 dir = (p - pos).normalized();
          
-         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir)));
+         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir), 1));
       }
    }
    
