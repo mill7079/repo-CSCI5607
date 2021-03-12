@@ -9,6 +9,7 @@
 #include <vector>
 #include "image_lib.h" //Defines an image class and a color class
 
+// material for objects
 struct material {
    Color ambient, diffuse, specular, transmissive;
    float ns, ior;
@@ -21,10 +22,11 @@ struct material {
       ior = i;
    }
    
-   material(){}
+   material(){}  // it complains if I don't have this
 };
 
-struct sphere {
+// sphere object
+struct sphere {  // position of center, radius, material
    vec3 pos;
    float r;
    material mat;
@@ -37,30 +39,16 @@ struct sphere {
    sphere() {}
 };
  
+// lights - general class for point, directional, and spot lights
 class light {
 public:
    Color i;
    vec3 pos, dir;
    float a1, a2;
    
-//   light() {};
-   
    // refactor actual calculations out to structs to avoid issues
-//   virtual Color diffuse(material mat, vec3 lDir, vec3 n) {
-//      std::cout << "bad" << std::endl;
-//      return mat.ambient;
-//   }
-//   virtual Color specular(material mat, vec3 n, vec3 h) {
-//      std::cout << "bad" << std::endl;
-//      return mat.ambient;
-//   }
    virtual Color diffuse(material mat, vec3 lDir, vec3 n) = 0;
    virtual Color specular(material mat, vec3 n, vec3 h) = 0;
-//   virtual Color specular(material mat, vec3 n, vec3 h) {
-//      std::cout << "bad" << std::endl;
-//      return mat.ambient;
-//   }
-//   virtual Color specular(material mat, vec3 n, vec3 h) = 0;
 };
 
 class pointLight : public light {
@@ -74,13 +62,9 @@ public:
       Color c = Color(0,0,0);
       float mult = fmax(0, dot(n, lDir));
       
-//      c.r += mat.diffuse.r * i.r * fmax(0, dot(n, lDir));
-//      c.g += mat.diffuse.g * i.g * fmax(0, dot(n, lDir));
-//      c.b += mat.diffuse.b * i.b * fmax(0, dot(n, lDir));
       c.r += mat.diffuse.r * i.r * mult;
       c.g += mat.diffuse.g * i.g * mult;
       c.b += mat.diffuse.b * i.b * mult;
-      std::cout << "good" << std::endl;
       
       return c;
    }
@@ -88,7 +72,6 @@ public:
    Color specular(material mat, vec3 n, vec3 h) override {
       Color c = Color(0,0,0);
       float mult = pow(fmax(0, dot(n, h)), mat.ns);
-      std::cout << "good" << std::endl;
       
       c.r += mat.specular.r * i.r * mult;
       c.g += mat.specular.g * i.g * mult;
@@ -105,6 +88,7 @@ public:
       dir = direction;
    }
    
+   // these haven't actually been implemented yet
    Color diffuse(material mat, vec3 lDir, vec3 n) override {
       Color c = Color(0,0,0);
       
@@ -128,6 +112,7 @@ public:
       a2 = angle2;
    }
    
+   // neither have these
    Color diffuse(material mat, vec3 lDir, vec3 n) override {
       return Color(0,0,0);
    }
@@ -167,7 +152,6 @@ material cur = material(Color(0,0,0), Color(1,1,1), Color(0,0,0), Color(0,0,0), 
 
 // Light parameters
 Color ambient = Color(0,0,0);
-// TODO: figure out how to handle other light sources
 //std::vector<light> lights;
 std::vector<light*> lights;
 
@@ -213,9 +197,6 @@ void parseSceneFile(std::string fileName){
       } else if (word == "background:") {
          input >> background.r >> background.g >> background.b;
       } else if (word == "material:") {
-//         for (int i = 0; i < 14; i++) {
-//            input >> material[i];
-//         }
          float r, g, b, ns, ior;
          Color a, d, s, t;
          
