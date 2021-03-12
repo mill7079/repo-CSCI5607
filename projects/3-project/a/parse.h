@@ -9,120 +9,6 @@
 #include <vector>
 #include "image_lib.h" //Defines an image class and a color class
 
-// material for objects
-struct material {
-   Color ambient, diffuse, specular, transmissive;
-   float ns, ior;
-   material(Color a, Color d, Color s, Color t, float n, float i) {
-      ambient = a;
-      diffuse = d;
-      specular = s;
-      transmissive = t;
-      ns = n;
-      ior = i;
-   }
-   
-   material(){}  // it complains if I don't have this
-};
-
-// sphere object
-struct sphere {  // position of center, radius, material
-   vec3 pos;
-   float r;
-   material mat;
-   sphere(vec3 position, float radius, material m) {
-      pos = position;
-      r = radius;
-      mat = m;
-   }
-   
-   sphere() {}
-};
- 
-// lights - general class for point, directional, and spot lights
-class light {
-public:
-   Color i;
-   vec3 pos, dir;
-   float a1, a2;
-   
-   // refactor actual calculations out to structs to avoid issues
-   virtual Color diffuse(material mat, vec3 lDir, vec3 n) = 0;
-   virtual Color specular(material mat, vec3 n, vec3 h) = 0;
-};
-
-class pointLight : public light {
-public:
-   pointLight(Color intensity, vec3 position) {
-      i = intensity;
-      pos = position;
-   }
-   
-   Color diffuse(material mat, vec3 lDir, vec3 n) override {
-      Color c = Color(0,0,0);
-      float mult = fmax(0, dot(n, lDir));
-      
-      c.r += mat.diffuse.r * i.r * mult;
-      c.g += mat.diffuse.g * i.g * mult;
-      c.b += mat.diffuse.b * i.b * mult;
-      
-      return c;
-   }
-   
-   Color specular(material mat, vec3 n, vec3 h) override {
-      Color c = Color(0,0,0);
-      float mult = pow(fmax(0, dot(n, h)), mat.ns);
-      
-      c.r += mat.specular.r * i.r * mult;
-      c.g += mat.specular.g * i.g * mult;
-      c.b += mat.specular.b * i.b * mult;
-      
-      return c;
-   }
-};
-
-class directionalLight : public light {
-public:
-   directionalLight(Color intensity, vec3 direction) {
-      i = intensity;
-      dir = direction;
-   }
-   
-   // these haven't actually been implemented yet
-   Color diffuse(material mat, vec3 lDir, vec3 n) override {
-      Color c = Color(0,0,0);
-      
-      return c;
-   }
-   
-   Color specular(material mat, vec3 n, vec3 h) override {
-      Color c = Color(0,0,0);
-      
-      return c;
-   }
-};
-
-class spotLight : public light {
-public:
-   spotLight(Color intensity, vec3 position, vec3 direction, float angle1, float angle2) {
-      i = intensity;
-      pos = position;
-      dir = direction;
-      a1 = angle1;
-      a2 = angle2;
-   }
-   
-   // neither have these
-   Color diffuse(material mat, vec3 lDir, vec3 n) override {
-      return Color(0,0,0);
-   }
-   
-   Color specular(material mat, vec3 n, vec3 h) override {
-      Color c = Color(0,0,0);
-      
-      return c;
-   }
-};
 
 
 // Set default values for camera/scene parameters
@@ -139,6 +25,10 @@ vec3 fwd = vec3(0,0,1).normalized();
 vec3 up = vec3(0,1,0).normalized();
 vec3 right = vec3(-1,0,0).normalized();
 float halfAngleVFOV = 45;
+
+// if I include this at the top, things don't work
+// I do not know how to C++
+#include "structs.h"
 
 //Scene (Sphere) Parameters
 vec3 spherePos = vec3(0,0,2);
@@ -157,6 +47,7 @@ std::vector<light*> lights;
 
 // Misc parameters
 int depth = 5;
+float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
 
 
 void parseSceneFile(std::string fileName){

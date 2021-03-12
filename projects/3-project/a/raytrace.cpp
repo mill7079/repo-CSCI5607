@@ -13,23 +13,11 @@
 
 // Scene parser with scene variables
 #include "parse.h"
+#include "structs.h"
 
 #include <limits>
 
-Color white = Color(1,1,1);
-float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
-
-// point of intersection, sphere intersected with
-struct intersection {
-   bool hit;
-   vec3 point;
-   sphere s;
-   intersection(bool h, vec3 p, sphere sph) {
-      hit = h;
-      point = p;
-      s = sph;
-   }
-};
+//Color white = Color(1,1,1);
 
 //bool raySphereIntersection(vec3 pos, vec3 dir) {
 //Color raySphereIntersection(vec3 pos, vec3 dir) {
@@ -86,6 +74,9 @@ Color getColor(intersection i) {
    // view direction
    vec3 v = (pos - point).normalized();
    
+   // avoid hitting current sphere with shadow ray
+   vec3 pS = point + (displace * n);
+   
    // start with ambient light
    color.r = ambient.r * s.mat.ambient.r;
    color.g = ambient.g * s.mat.ambient.g;
@@ -95,28 +86,31 @@ Color getColor(intersection i) {
    // calculate contributions for each light source
    for (light* l : lights) {
       // vector to light source
-      vec3 toLight = l->pos - point;
+//      vec3 toLight = l->pos - point;
+//
+//      // don't add light if point is in shadow
+//      if (raySphereIntersection(pS, toLight.normalized()).hit) continue;
+//
+//      // light direction and halfway vector for blinn-phong
+//      vec3 lDir = toLight.normalized();
+//      vec3 h = (v+lDir).normalized();
+//
+//      // attenuate with distance from light (1/d^2)
+//      float dSquare = pow(toLight.length(), 2);
+//
+//      // calculate diffuse and specular contributions
+//      Color dif = l->diffuse(s.mat, lDir, n);
+//      Color spec = l->specular(s.mat, n, h);
+//
+//      color.r += (dif.r + spec.r) / dSquare;
+//      color.g += (dif.g + spec.g) / dSquare;
+//      color.b += (dif.b + spec.b) / dSquare;
       
-      // avoid hitting current sphere with shadow ray
-      vec3 pS = point + (displace * n);
+      Color c = l->findLight(s, pS);
       
-      // don't add light if point is in shadow
-      if (raySphereIntersection(pS, toLight.normalized()).hit) continue;
-
-      // light direction and halfway vector for blinn-phong
-      vec3 lDir = toLight.normalized();
-      vec3 h = (v+lDir).normalized();
-      
-      // attenuate with distance from light (1/d^2)
-      float dSquare = pow(toLight.length(), 2);
-      
-      // calculate diffuse and specular contributions
-      Color dif = l->diffuse(s.mat, lDir, n);
-      Color spec = l->specular(s.mat, n, h);
-      
-      color.r += (dif.r + spec.r) / dSquare;
-      color.g += (dif.g + spec.g) / dSquare;
-      color.b += (dif.b + spec.b) / dSquare;
+      color.r += c.r;
+      color.g += c.g;
+      color.b += c.b;
    }
    
    return color;
