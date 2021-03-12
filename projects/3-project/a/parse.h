@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include <vector>
+#include "image_lib.h" //Defines an image class and a color class
 
 struct material {
    Color ambient, diffuse, specular, transmissive;
@@ -35,32 +36,90 @@ struct sphere {
    
    sphere() {}
 };
-
-struct light {
+ 
+class light {
+public:
    Color i;
    vec3 pos, dir;
    float a1, a2;
    
-//   light () {
-//      i = Color(0,0,0);
+//   light() {};
+   
+   // refactor actual calculations out to structs to avoid issues
+//   virtual Color diffuse(material mat, vec3 lDir, vec3 n) {
+//      std::cout << "bad" << std::endl;
+//      return mat.ambient;
 //   }
+//   virtual Color specular(material mat, vec3 n, vec3 h) {
+//      std::cout << "bad" << std::endl;
+//      return mat.ambient;
+//   }
+   virtual Color diffuse(material mat, vec3 lDir, vec3 n) = 0;
+   virtual Color specular(material mat, vec3 n, vec3 h) = 0;
+//   virtual Color specular(material mat, vec3 n, vec3 h) {
+//      std::cout << "bad" << std::endl;
+//      return mat.ambient;
+//   }
+//   virtual Color specular(material mat, vec3 n, vec3 h) = 0;
 };
 
-struct pointLight : light {
+class pointLight : public light {
+public:
    pointLight(Color intensity, vec3 position) {
       i = intensity;
       pos = position;
    }
+   
+   Color diffuse(material mat, vec3 lDir, vec3 n) override {
+      Color c = Color(0,0,0);
+      float mult = fmax(0, dot(n, lDir));
+      
+//      c.r += mat.diffuse.r * i.r * fmax(0, dot(n, lDir));
+//      c.g += mat.diffuse.g * i.g * fmax(0, dot(n, lDir));
+//      c.b += mat.diffuse.b * i.b * fmax(0, dot(n, lDir));
+      c.r += mat.diffuse.r * i.r * mult;
+      c.g += mat.diffuse.g * i.g * mult;
+      c.b += mat.diffuse.b * i.b * mult;
+      std::cout << "good" << std::endl;
+      
+      return c;
+   }
+   
+   Color specular(material mat, vec3 n, vec3 h) override {
+      Color c = Color(0,0,0);
+      float mult = pow(fmax(0, dot(n, h)), mat.ns);
+      std::cout << "good" << std::endl;
+      
+      c.r += mat.specular.r * i.r * mult;
+      c.g += mat.specular.g * i.g * mult;
+      c.b += mat.specular.b * i.b * mult;
+      
+      return c;
+   }
 };
 
-struct directionalLight : light {
+class directionalLight : public light {
+public:
    directionalLight(Color intensity, vec3 direction) {
       i = intensity;
       dir = direction;
    }
+   
+   Color diffuse(material mat, vec3 lDir, vec3 n) override {
+      Color c = Color(0,0,0);
+      
+      return c;
+   }
+   
+   Color specular(material mat, vec3 n, vec3 h) override {
+      Color c = Color(0,0,0);
+      
+      return c;
+   }
 };
 
-struct spotLight : light {
+class spotLight : public light {
+public:
    spotLight(Color intensity, vec3 position, vec3 direction, float angle1, float angle2) {
       i = intensity;
       pos = position;
@@ -68,9 +127,17 @@ struct spotLight : light {
       a1 = angle1;
       a2 = angle2;
    }
+   
+   Color diffuse(material mat, vec3 lDir, vec3 n) override {
+      return Color(0,0,0);
+   }
+   
+   Color specular(material mat, vec3 n, vec3 h) override {
+      Color c = Color(0,0,0);
+      
+      return c;
+   }
 };
-
-// i suppose these could have been classes couldn't they...whoops
 
 
 // Set default values for camera/scene parameters
@@ -101,7 +168,8 @@ material cur = material(Color(0,0,0), Color(1,1,1), Color(0,0,0), Color(0,0,0), 
 // Light parameters
 Color ambient = Color(0,0,0);
 // TODO: figure out how to handle other light sources
-std::vector<light> lights;
+//std::vector<light> lights;
+std::vector<light*> lights;
 
 // Misc parameters
 int depth = 5;
@@ -168,19 +236,22 @@ void parseSceneFile(std::string fileName){
          Color c;
          vec3 d;
          input >> c.r >> c.g >> c.b >> d.x >> d.y >> d.z;
-         lights.push_back(directionalLight(c,d));
+//         lights.push_back(directionalLight(c,d));
+         lights.push_back(new directionalLight(c,d));
       } else if (word == "point_light:") {
          Color c;
          vec3 p;
          input >> c.r >> c.g >> c.b >> p.x >> p.y >> p.z;
-         lights.push_back(pointLight(c, p));
+//         lights.push_back(pointLight(c, p));
+         lights.push_back(new pointLight(c, p));
       } else if (word == "spot_light:") {
          Color c;
          vec3 p, d;
          float a1, a2;
          input >> c.r >> c.g >> c.b >> p.x >> p.y >> p.z >>
          d.x >> d.y >> d.z >> a1 >> a2;
-         lights.push_back(spotLight(c, p, d, a1, a2));
+//         lights.push_back(spotLight(c, p, d, a1, a2));
+         lights.push_back(new spotLight(c, p, d, a1, a2));
       } else if (word == "ambient_light:") {
          input >> ambient.r >> ambient.g >> ambient.b;
       } else if (word == "max_depth:") {

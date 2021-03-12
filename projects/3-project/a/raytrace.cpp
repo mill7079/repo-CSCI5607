@@ -88,19 +88,38 @@ Color getColor(intersection i) {
    color.b = ambient.b * s.mat.ambient.b;
    
    // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
-   for (light l : lights) {
+//   for (light l : lights) {
+   for (light* l : lights) {
+      vec3 toLight = l->pos - point;
+//   for (int x = 0; x < lights.size(); x++) {
+//      light l = lights[x];
       vec3 pS = point + (displace * n);
 //      if (raySphereIntersection(point, (l.pos - point.normalized())).hit) continue;
-      if (raySphereIntersection(pS, (l.pos - point).normalized()).hit) continue;  // don't add light if point is in shadow
-      vec3 lDir = (l.pos - point).normalized();
+//      if (raySphereIntersection(pS, (l.pos - point).normalized()).hit) continue;  // don't add light if point is in shadow
+      if (raySphereIntersection(pS, toLight.normalized()).hit) continue;
+//      vec3 lDir = (l.pos - point).normalized();
+      vec3 lDir = toLight.normalized();
+//      vec3 lDir = (lights[x].pos - point).normalized();
       vec3 h = (v+lDir).normalized();
       
       // attenuate with distance from light (1/d^2)
-      float dSquare = pow((l.pos - point).length(), 2);
+//      float dSquare = pow((l.pos - point).length(), 2);
+      float dSquare = pow(toLight.length(), 2);
+//      float dSquare = pow((lights[x].pos - point).length(), 2);
       
-      color.r += (s.mat.diffuse.r * l.i.r * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.r * l.i.r * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
-      color.g += (s.mat.diffuse.g * l.i.g * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.g * l.i.g * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
-      color.b += (s.mat.diffuse.b * l.i.b * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.b * l.i.b * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+//      color.r += (s.mat.diffuse.r * l.i.r * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.r * l.i.r * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+//      color.g += (s.mat.diffuse.g * l.i.g * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.g * l.i.g * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+//      color.b += (s.mat.diffuse.b * l.i.b * fmax(0, dot(n, lDir)))/dSquare + (s.mat.specular.b * l.i.b * pow(fmax(0, dot(n, h)), s.mat.ns))/dSquare;
+//      Color dif = l.diffuse(s.mat, lDir, n);
+//      Color spec = l.specular(s.mat, n, h);
+//      Color dif = lights[x].diffuse(s.mat, lDir, n);
+//      Color spec = lights[x].specular(s.mat, n, h);
+      Color dif = l->diffuse(s.mat, lDir, n);
+      Color spec = l->specular(s.mat, n, h);
+      
+      color.r += (dif.r + spec.r) / dSquare;
+      color.g += (dif.g + spec.g) / dSquare;
+      color.b += (dif.b + spec.b) / dSquare;
    }
    
    return color;
