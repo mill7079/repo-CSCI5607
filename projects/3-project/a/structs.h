@@ -157,7 +157,31 @@ public:
 //
 //      return c;
 //   }
-   Color findLight(sphere s, vec3 point) override {return Color(0,0,0);}
+   Color findLight(sphere s, vec3 point) override {
+      Color c = Color(0,0,0);
+      vec3 toLight = -1 * dir;
+      vec3 lDir = toLight.normalized();
+      
+      if (raySphereIntersection(point, lDir).hit) return c;
+      
+      // normal
+      vec3 n = (point - s.pos).normalized();
+      
+      // halfway vector
+      vec3 h = ((pos - point).normalized() + lDir).normalized();
+      
+      // diffuse factor
+      float dMult = fmax(0, dot(n, lDir));
+      
+      // specular factor
+      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+      
+      c.r += i.r * (s.mat.diffuse.r * dMult + s.mat.specular.r * sMult);
+      c.g += i.g * (s.mat.diffuse.g * dMult + s.mat.specular.g * sMult);
+      c.b += i.b * (s.mat.diffuse.b * dMult + s.mat.specular.b * sMult);
+      
+      return c;
+   }
 };
 
 class spotLight : public light {
