@@ -1,0 +1,24 @@
+#Simple sphere: Scene
+camera_pos: 0 2 -6
+camera_fwd: 0 0.3 -1
+camera_up:  0 1 0
+camera_fov_ha: 35
+output_image: dir_light.png
+
+#"ground" sphere:
+#material: .75 .75 .75 .75 .75 .75 1 1 1 32 .2 .2 .2 1.5
+#sphere: 0 -55 0 50
+
+#red sphere:
+material: 0.25 0.25 0.25 0.25 0.25 0.25 .7 .7 .7 32 .2 .2 .2 1.5
+sphere: 0 -1 0 1
+material: 0.25 0.25 0.25 0.25 0.25 0.25 .3 .3 .3 32 .2 .2 .2 1.5
+sphere: -1.1 1 0 1
+sphere: 1.1 1 0 1
+
+#light
+directional_light: 10 5 0 0 -1 0.1
+ambient_light: .25 .25 .25
+background: .1 .1 .1
+
+max_depth: 1

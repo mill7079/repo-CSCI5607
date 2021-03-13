@@ -97,7 +97,9 @@ public:
       vec3 n = (point - s.pos).normalized();
       
       // halfway vector
-//      vec3 h = ((pos - point).normalized() + lDir).normalized();
+      vec3 h = ((pos - point).normalized() + lDir).normalized();
+      
+//      vec3 v2 = (pos-point).normalized();
       
       // attenuate with distance from light (1/d^2)
       float dSquare = pow(toLight.length(), 2);
@@ -106,8 +108,9 @@ public:
       float dMult = fmax(0, dot(n, lDir));
       
       // specular factor -- v dot r
-//      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
-      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
+      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+//      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
+//      float sMult = pow(fmax(0, dot(v2,r.normalized())), s.mat.ns);
 
       // calculate light/material contributions
       c.r += i.r * ((s.mat.diffuse.r * dMult) / dSquare + (s.mat.specular.r * sMult)/dSquare);
@@ -137,14 +140,14 @@ public:
       vec3 n = (point - s.pos).normalized();
       
       // halfway vector
-//      vec3 h = ((pos - point).normalized() + lDir).normalized();
+      vec3 h = ((pos - point).normalized() + lDir).normalized();
       
       // diffuse factor
       float dMult = fmax(0, dot(n, lDir));
       
       // specular factor
-//      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
-      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
+      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+//      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
       
       c.r += i.r * (s.mat.diffuse.r * dMult + s.mat.specular.r * sMult);
       c.g += i.g * (s.mat.diffuse.g * dMult + s.mat.specular.g * sMult);

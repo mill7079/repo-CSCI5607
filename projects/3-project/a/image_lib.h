@@ -11,6 +11,14 @@ struct Color{
 
   Color(float r, float g, float b) : r(r), g(g), b(b) {}
   Color() : r(0), g(0), b(0) {}
+   
+   inline Color operator+ (Color a) {
+      return Color(a.r+r, a.g+g, a.b+b);
+   }
+   
+   inline Color operator* (Color a) {
+      return Color(a.r*r, a.g*g, a.b*b);
+   }
 };
 
 struct Image{
