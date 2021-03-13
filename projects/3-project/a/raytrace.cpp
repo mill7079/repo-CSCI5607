@@ -44,7 +44,9 @@ intersection raySphereIntersection(vec3 pos, vec3 dir) {
          if (t0 > 0 || t1 > 0) {
             hit = true;
             minMag = toStart.length();
-            point = pos + fmin(t0,t1)*dir;
+//            point = pos + fmin(t0,t1)*dir;
+            point = pos + fmin(fmax(0,t0),fmax(0,t1))*dir;
+            point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
             hitSphere = s;
          }
       }
@@ -57,8 +59,10 @@ intersection raySphereIntersection(vec3 pos, vec3 dir) {
 
 //Color getColor(vec3 point, sphere s) {
 //Color getColor(intersection i) {
-Color getColor(intersection i, int depth) {
-   if (!i.hit) return background; // eye ray did not hit sphere
+Color getColor(intersection i, int depth, vec3 initPos) {
+//   if (!i.hit) return background; // eye ray did not hit sphere
+   if (!i.hit && depth == 1) return background;
+   if (!i.hit) return Color();
    
    vec3 point = i.point;
    sphere s = i.s;
@@ -69,11 +73,21 @@ Color getColor(intersection i, int depth) {
    vec3 n = point - s.pos;
    n = n.normalized();
    
-   // view direction
-   vec3 v = (pos - point).normalized();
-   
    // avoid hitting current sphere with shadow ray
    vec3 pS = point + (displace * n);
+   
+   // view direction
+//   vec3 v = (pos - point).normalized();
+//   vec3 v = (initPos - point).normalized();
+   vec3 v = (initPos - pS).normalized();
+   
+   // reflection vector
+   // r = d - 2*dot(d,n) * n
+   // 𝑟=𝑑−2(𝑑⋅𝑛)𝑛
+//   vec3 d = point - initPos;
+   vec3 d = pS - initPos;
+   vec3 r = d - 2*dot(d,n) * n;
+//   vec3 r = v - 2*dot(v,n) * n;
    
    // start with ambient light
 //   color.r = ambient.r * s.mat.ambient.r;
@@ -84,33 +98,18 @@ Color getColor(intersection i, int depth) {
    // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
    // calculate contributions for each light source
    for (light* l : lights) {
-      // vector to light source
-//      vec3 toLight = l->pos - point;
-//
-//      // don't add light if point is in shadow
-//      if (raySphereIntersection(pS, toLight.normalized()).hit) continue;
-//
-//      // light direction and halfway vector for blinn-phong
-//      vec3 lDir = toLight.normalized();
-//      vec3 h = (v+lDir).normalized();
-//
-//      // attenuate with distance from light (1/d^2)
-//      float dSquare = pow(toLight.length(), 2);
-//
-//      // calculate diffuse and specular contributions
-//      Color dif = l->diffuse(s.mat, lDir, n);
-//      Color spec = l->specular(s.mat, n, h);
-//
-//      color.r += (dif.r + spec.r) / dSquare;
-//      color.g += (dif.g + spec.g) / dSquare;
-//      color.b += (dif.b + spec.b) / dSquare;
       
-      Color c = l->findLight(s, pS);
+//      Color c = l->findLight(s, pS);
+      Color c = l->findLight(s, pS, v, r);
       
-//      color.r += c.r;
-//      color.g += c.g;
-//      color.b += c.b;
       color = color + c;
+   }
+   
+   // reflection?
+   if (depth < maxDepth) {
+//      color = color + getColor(raySphereIntersection(point, r), depth+1, point);
+//      color = color + getColor(raySphereIntersection(point, r), depth+1, pS);
+      color = color + i.s.mat.specular * getColor(raySphereIntersection(pS, r.normalized()), depth+1, pS);
    }
    
    return color;
@@ -142,7 +141,7 @@ int main(int argc, char** argv) {
          vec3 p = pos - d*fwd + u*right + v*up;
          vec3 dir = (p - pos).normalized();
          
-         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir), 1));
+         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir), 1, pos));
       }
    }
    

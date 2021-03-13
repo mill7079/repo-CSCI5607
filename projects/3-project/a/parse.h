@@ -81,7 +81,7 @@ void parseSceneFile(std::string fileName){
          up = up.normalized();
       } else if (word == "camera_fov_ha:") {
          input >> halfAngleVFOV;
-      } else if (word == "image_resolution:") {
+      } else if (word == "image_resolution:" || word == "film_resolution:") {
          input >> img_width >> img_height;
       } else if (word == "output_image:") {
          input >> imgName;

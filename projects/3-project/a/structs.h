@@ -50,6 +50,7 @@ struct sphere {  // position of center, radius, material
 struct intersection {
    bool hit;
    vec3 point;
+   vec3 ray;
    sphere s;
    intersection(bool h, vec3 p, sphere sph) {
       hit = h;
@@ -70,7 +71,8 @@ public:
    // refactor actual calculations out to structs to avoid issues
 //   virtual Color diffuse(material mat, vec3 lDir, vec3 n) = 0;
 //   virtual Color specular(material mat, vec3 n, vec3 h) = 0;
-   virtual Color findLight(sphere s, vec3 point) = 0;
+//   virtual Color findLight(sphere s, vec3 point) = 0;
+   virtual Color findLight(sphere s, vec3 point, vec3 v, vec3 r) = 0;
 };
 
 class pointLight : public light {
@@ -81,18 +83,8 @@ public:
       p = position;
    }
    
-//   Color diffuse(material mat, vec3 lDir, vec3 n) override {
-//      Color c = Color(0,0,0);
-//      float mult = fmax(0, dot(n, lDir));
-//
-//      c.r += mat.diffuse.r * i.r * mult;
-//      c.g += mat.diffuse.g * i.g * mult;
-//      c.b += mat.diffuse.b * i.b * mult;
-//
-//      return c;
-//   }
-   
-   Color findLight(sphere s, vec3 point) override {
+//   Color findLight(sphere s, vec3 point) override {
+   Color findLight(sphere s, vec3 point, vec3 v, vec3 r) override {
 //      std::cout << "find light" << std::endl;
       vec3 toLight = p - point;
       vec3 lDir = toLight.normalized();
@@ -105,8 +97,7 @@ public:
       vec3 n = (point - s.pos).normalized();
       
       // halfway vector
-      vec3 h = ((pos - point).normalized() + lDir).normalized();
-//      vec3 h = ((vec3(0,0,0) - point).normalized() + lDir).normalized();
+//      vec3 h = ((pos - point).normalized() + lDir).normalized();
       
       // attenuate with distance from light (1/d^2)
       float dSquare = pow(toLight.length(), 2);
@@ -114,27 +105,17 @@ public:
       // diffuse factor
       float dMult = fmax(0, dot(n, lDir));
       
-      // specular factor
-      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+      // specular factor -- v dot r
+//      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
 
       // calculate light/material contributions
-      c.r += i.r * (s.mat.diffuse.r * dMult + s.mat.specular.r * sMult) / dSquare;
-      c.g += i.g * (s.mat.diffuse.g * dMult + s.mat.specular.g * sMult) / dSquare;
-      c.b += i.b * (s.mat.diffuse.b * dMult + s.mat.specular.b * sMult) / dSquare;
+      c.r += i.r * ((s.mat.diffuse.r * dMult) / dSquare + (s.mat.specular.r * sMult)/dSquare);
+      c.g += i.g * ((s.mat.diffuse.g * dMult) / dSquare + (s.mat.specular.g * sMult)/dSquare);
+      c.b += i.b * ((s.mat.diffuse.b * dMult) / dSquare + (s.mat.specular.b * sMult)/dSquare);
       
       return c;
    }
-   
-//   Color specular(material mat, vec3 n, vec3 h) override {
-//      Color c = Color(0,0,0);
-//      float mult = pow(fmax(0, dot(n, h)), mat.ns);
-//
-//      c.r += mat.specular.r * i.r * mult;
-//      c.g += mat.specular.g * i.g * mult;
-//      c.b += mat.specular.b * i.b * mult;
-//
-//      return c;
-//   }
 };
 
 class directionalLight : public light {
@@ -144,20 +125,8 @@ public:
       dir = direction;
    }
    
-   // these haven't actually been implemented yet
-//   Color diffuse(material mat, vec3 lDir, vec3 n) override {
-//      Color c = Color(0,0,0);
-//      float mult;
-//
-//      return c;
-//   }
-//
-//   Color specular(material mat, vec3 n, vec3 h) override {
-//      Color c = Color(0,0,0);
-//
-//      return c;
-//   }
-   Color findLight(sphere s, vec3 point) override {
+//   Color findLight(sphere s, vec3 point) override {
+   Color findLight(sphere s, vec3 point, vec3 v, vec3 r) override {
       Color c = Color(0,0,0);
       vec3 toLight = -1 * dir;
       vec3 lDir = toLight.normalized();
@@ -168,13 +137,14 @@ public:
       vec3 n = (point - s.pos).normalized();
       
       // halfway vector
-      vec3 h = ((pos - point).normalized() + lDir).normalized();
+//      vec3 h = ((pos - point).normalized() + lDir).normalized();
       
       // diffuse factor
       float dMult = fmax(0, dot(n, lDir));
       
       // specular factor
-      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+//      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
+      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
       
       c.r += i.r * (s.mat.diffuse.r * dMult + s.mat.specular.r * sMult);
       c.g += i.g * (s.mat.diffuse.g * dMult + s.mat.specular.g * sMult);
@@ -205,7 +175,9 @@ public:
 //
 //      return c;
 //   }
-   Color findLight(sphere s, vec3 point) override {return Color(0,0,0);}
+//   Color findLight(sphere s, vec3 point) override
+   Color findLight(sphere s, vec3 point, vec3 v, vec3 r) override
+   {return Color(0,0,0);}
 
 };
 #endif
