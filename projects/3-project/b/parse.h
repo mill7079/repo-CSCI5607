@@ -19,7 +19,7 @@ int img_width = 640, img_height = 480;
 std::string imgName = "raytraced.bmp";
 
 //Camera Parameters
-vec3 pos = vec3(0,0,0);
+vec3 camPos = vec3(0,0,0);
 //vec3 fwd = vec3(0,0,-1).normalized();
 vec3 fwd = vec3(0,0,1).normalized();
 vec3 up = vec3(0,1,0).normalized();
@@ -30,10 +30,17 @@ float halfAngleVFOV = 45;
 // I do not know how to C++
 #include "structs.h"
 
-//Scene (Sphere) Parameters
+// Scene (sphere) Parameters
 vec3 spherePos = vec3(0,0,2);
 float sphereRadius = 1;
 std::vector<sphere> spheres;
+
+// Triangle parameters
+// Not sure what to do with these since you can't declare an
+   // array without a size...
+int maxVertices;
+int maxNormals;
+
 
 // Material parameters
 Color background = Color(0,0,0);
@@ -72,7 +79,7 @@ void parseSceneFile(std::string fileName){
          input >> spherePos.x >> spherePos.y >> spherePos.z >> sphereRadius;
          spheres.push_back(sphere(spherePos, sphereRadius, cur));
       } else if (word == "camera_pos:") {
-         input >> pos.x >> pos.y >> pos.z;
+         input >> camPos.x >> camPos.y >> camPos.z;
       } else if (word == "camera_fwd:") {
          input >> fwd.x >> fwd.y >> fwd.z;
          fwd = fwd.normalized();
@@ -85,6 +92,18 @@ void parseSceneFile(std::string fileName){
          input >> img_width >> img_height;
       } else if (word == "output_image:") {
          input >> imgName;
+      } else if (word == "max_vertices:") {
+         
+      } else if (word == "max_normals:") {
+         
+      } else if (word == "vertex:") {
+         
+      } else if (word == "normal:") {
+         
+      } else if (word == "triangle:") {
+         
+      } else if (word == "normal_triangle:") {
+         
       } else if (word == "background:") {
          input >> background.r >> background.g >> background.b;
       } else if (word == "material:") {

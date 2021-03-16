@@ -17,44 +17,59 @@
 
 #include <limits>
 
-//Color white = Color(1,1,1);
+//intersection raySphereIntersection(vec3 pos, vec3 dir) {
+//   float minMag = INFINITY;
+//   vec3 point = vec3(0,0,0);
+//   sphere hitSphere = sphere(point, 1, cur);
+//   bool hit = false;
+//   Color color = background;
+//   for (sphere s : spheres) {
+//      vec3 toStart = (pos - s.pos);
+//      if (toStart.length() >= minMag) continue;  // don't need to check intersection if there's a closer intersecting sphere
+//
+//      float a = dot(dir, dir);
+//      float b = 2 * dot(dir,toStart);
+//      float c = dot(toStart, toStart) - pow(s.r, 2);
+//      float det = pow(b,2) - (4*a*c);
+//
+//      if (det < 0) continue;
+//      else {
+//         float t0 = (-b + sqrt(det)) / (2*a);
+//         float t1 = (-b - sqrt(det)) / (2*a);
+//         if (t0 > 0 || t1 > 0) {
+//            hit = true;
+//            minMag = toStart.length();
+////            point = pos + fmin(t0,t1)*dir;
+//            point = pos + fmin(fmax(0,t0),fmax(0,t1))*dir;
+//            point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
+//            hitSphere = s;
+//         }
+//      }
+//   }
+//
+//   return intersection(hit, point, hitSphere);
+//}
 
-//bool raySphereIntersection(vec3 pos, vec3 dir) {
-//Color raySphereIntersection(vec3 pos, vec3 dir) {
-intersection raySphereIntersection(vec3 pos, vec3 dir) {
-//   float minMag = -1;
+intersection rayShapeIntersection(vec3 pos, vec3 dir) {
    float minMag = INFINITY;
-   vec3 point = vec3(0,0,0);
-   sphere hitSphere = sphere(point, 1, cur);
-   bool hit = false;
+//   vec3 point = vec3(0,0,0);
+//   sphere hitSphere = sphere(point, 1, cur);
+//   shape hitShape = shape();
+//   bool hit = false;
+   intersection ret = intersection(false, vec3(0,0,0), shape());
+   
    Color color = background;
-   for (sphere s : spheres) {
-      vec3 toStart = (pos - s.pos);
-      if (toStart.length() >= minMag) continue;  // don't need to check intersection if there's a closer intersecting sphere
-      
-      float a = dot(dir, dir);
-      float b = 2 * dot(dir,toStart);
-      float c = dot(toStart, toStart) - pow(s.r, 2);
-      float det = pow(b,2) - (4*a*c);
-      
-      if (det < 0) continue;
-      else {
-         float t0 = (-b + sqrt(det)) / (2*a);
-         float t1 = (-b - sqrt(det)) / (2*a);
-         if (t0 > 0 || t1 > 0) {
-            hit = true;
-            minMag = toStart.length();
-//            point = pos + fmin(t0,t1)*dir;
-            point = pos + fmin(fmax(0,t0),fmax(0,t1))*dir;
-            point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
-            hitSphere = s;
-         }
+//   for (sphere s : spheres) {
+   for (shape s : shapes) {
+      intersection i = s.intersect(pos, dir);
+
+      if (i.hit && (pos-i.point).length() < minMag) {
+         ret = i;
       }
    }
-   
-//   if (!hit) return background;
-//   return getColor(point, hitSphere);
-   return intersection(hit, point, hitSphere);
+
+//   return intersection(hit, point, hitSphere);
+   return ret;
 }
 
 //Color getColor(vec3 point, sphere s) {
@@ -139,10 +154,13 @@ int main(int argc, char** argv) {
          float u = (half_w - (width) * (i/width));
          float v = (half_h - (height) * (j/height));
          
-         vec3 p = pos - d*fwd + u*right + v*up;
-         vec3 dir = (p - pos).normalized();
+//         vec3 p = pos - d*fwd + u*right + v*up;
+         vec3 p = camPos - d*fwd + u*right + v*up;
+//         vec3 dir = (p - pos).normalized();
+         vec3 dir = (p - camPos).normalized();
          
-         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir), 1, pos));
+//         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir), 1, pos));
+         img.setPixel(i, j, getColor(raySphereIntersection(camPos, dir), 1, camPos));
       }
    }
    

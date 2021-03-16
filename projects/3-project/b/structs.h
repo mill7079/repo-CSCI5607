@@ -10,7 +10,6 @@
 #include "image_lib.h" //Defines an image class and a color class
 
 #include "parse.h"
-//#include "raytrace.cpp"
 
 // forward declaration for the forward declaration. whyyyyy
 struct intersection;
@@ -32,32 +31,95 @@ struct material {
    material(){}  // it complains if I don't have this
 };
 
+struct intersection;
+
+// overall shape class
+class shape {
+public:
+   material mat;
+   shape(){};
+   
+   virtual intersection intersect(vec3 pos, vec3 dir) = 0;
+}
+
+// point of intersection, sphere intersected with
+struct intersection {
+   bool hit;
+   vec3 point;
+//   vec3 ray;
+//   sphere s;
+   shape s;
+//   intersection(bool h, vec3 p, sphere sph) {
+   intersection(bool h, vec3 p, shape sh) {
+      hit = h;
+      point = p;
+      s = sh;
+   }
+};
+
 // sphere object
-struct sphere {  // position of center, radius, material
+//struct sphere {  // position of center, radius, material
+//   vec3 pos;
+//   float r;
+//   material mat;
+//   sphere(vec3 position, float radius, material m) {
+//      pos = position;
+//      r = radius;
+//      mat = m;
+//   }
+//
+//   sphere() {}
+//};
+
+// sphere class
+class sphere: public shape {
+public:
    vec3 pos;
    float r;
-   material mat;
+   
    sphere(vec3 position, float radius, material m) {
       pos = position;
       r = radius;
       mat = m;
    }
    
-   sphere() {}
-};
+   intersection intersect(vec3 rayPos, vec3 dir) {
+      intersection ret = intersection(false, pos, this);
+      vec3 toStart = (rayPos - pos);
 
-// point of intersection, sphere intersected with
-struct intersection {
-   bool hit;
-   vec3 point;
-   vec3 ray;
-   sphere s;
-   intersection(bool h, vec3 p, sphere sph) {
-      hit = h;
-      point = p;
-      s = sph;
+      float a = dot(dir, dir);
+      float b = 2 * dot(dir,toStart);
+      float c = dot(toStart, toStart) - pow(s.r, 2);
+      float det = pow(b,2) - (4*a*c);
+
+      if (det >= 0) {
+         float t0 = (-b + sqrt(det)) / (2*a);
+         float t1 = (-b - sqrt(det)) / (2*a);
+         if (t0 > 0 || t1 > 0) {
+            ret.hit = true;
+//            point = pos + fmin(t0,t1)*dir;
+            ret.point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
+         }
+      }
+      
+      return ret;
    }
-};
+}
+
+//class flatTriangle: public shape {
+//public:
+//
+//   flatTriangle(vec3 v1, vec3 v2, vec3 v3) {
+//
+//   }
+//}
+//
+//class triangle: public shape {
+//public:
+//   triangle (vec3 v1, vec3 v2, vec3 v3, vec3 n1, vec3 n2, vec3 n3) {
+//
+//   }
+//}
 
  
 // lights - general class for point, directional, and spot lights
