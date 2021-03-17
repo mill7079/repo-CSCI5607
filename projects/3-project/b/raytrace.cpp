@@ -17,12 +17,8 @@
 
 #include <limits>
 
-//Color white = Color(1,1,1);
-
-//bool raySphereIntersection(vec3 pos, vec3 dir) {
-//Color raySphereIntersection(vec3 pos, vec3 dir) {
+// test if ray defined by pos and dir intersects with any shapes in scene
 intersection raySphereIntersection(vec3 pos, vec3 dir) {
-//   float minMag = -1;
    float minMag = INFINITY;
    vec3 point = vec3(0,0,0);
    sphere* hitSphere = new sphere(point, 1, cur);
@@ -30,43 +26,7 @@ intersection raySphereIntersection(vec3 pos, vec3 dir) {
    Color color = background;
    
    intersection ret = intersection(false, vec3(0,0,0), shapes[0]);
-//   for (sphere s : spheres) {
    for (shape* s : shapes) {
-//      sphere* s = (sphere*) sh;
-      
-//      vec3 toStart = (pos - s.pos);
-//      vec3 toStart = (pos - s->pos);
-//      if (toStart.length() >= minMag) continue;  // don't need to check intersection if there's a closer intersecting sphere
-      
-//      float a = dot(dir, dir);
-//      float b = 2 * dot(dir,toStart);
-////      float c = dot(toStart, toStart) - pow(s.r, 2);
-//      float c = dot(toStart, toStart) - pow(s->r, 2);
-//      float det = pow(b,2) - (4*a*c);
-//
-//      if (det < 0) continue;
-//      else {
-//         float t0 = (-b + sqrt(det)) / (2*a);
-//         float t1 = (-b - sqrt(det)) / (2*a);
-//         if (t0 > 0 || t1 > 0) {
-////            if (toStart.length() < minMag) {
-////            vec3 p = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
-//            intersection i = s->intersect(pos, dir);
-////            if ((p-pos).length() < minMag) {
-////            std::cout << (i.point - pos).length() << " " << (p-pos).length() << std::endl;
-//            if (i.hit && (pos-i.point).length() < minMag) {
-//               hit = true;
-//      //            minMag = (point-pos).length();
-////               minMag = toStart.length();
-////               if (!s->intersect(pos, dir).hit) std::cout << "MISMATCH" << std::endl;
-//      //            point = pos + fmin(t0,t1)*dir;
-////               point = pos + fmin(fmax(0,t0),fmax(0,t1))*dir;
-//               point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
-//               minMag = ((point-pos).length());
-//               hitSphere = s;
-//            }
-//         }
-//      }
       intersection i = s->intersect(pos, dir);
 
       if (i.hit && (pos-i.point).length() < minMag) {
@@ -75,27 +35,18 @@ intersection raySphereIntersection(vec3 pos, vec3 dir) {
       }
    }
    
-//   if (!hit) return background;
-//   return getColor(point, hitSphere);
-//   return intersection(hit, point, hitSphere);
    return ret;
 }
 
-//Color getColor(vec3 point, sphere s) {
-//Color getColor(intersection i) {
+// apply lighting model and reflection/refraction to get color of a pixel
 Color getColor(intersection i, int depth, vec3 initPos) {
-//   if (!i.hit) return background; // eye ray did not hit sphere
    if (!i.hit && depth == 1) return background;
    if (!i.hit) return Color();
    
-   vec3 point = i.point;
-//   sphere s = i.s;
-//   sphere* s = (sphere*) i.s;
-   
+   vec3 point = i.point;  // intersection point
    Color color = Color(0,0,0);
    
    // normal
-//   vec3 n = point - s.pos;
 //   vec3 n = point - s->pos;
 //   n = n.normalized();
    vec3 n = i.s->findNormal(point);
@@ -104,8 +55,6 @@ Color getColor(intersection i, int depth, vec3 initPos) {
    vec3 pS = point + (displace * n);
    
    // view direction
-//   vec3 v = (pos - point).normalized();
-//   vec3 v = (initPos - point).normalized();
    vec3 v = (initPos - pS).normalized();
    
    // reflection vector
@@ -117,29 +66,17 @@ Color getColor(intersection i, int depth, vec3 initPos) {
 //   vec3 r = v - 2*dot(v,n) * n;
    
    // start with ambient light
-//   color.r = ambient.r * s.mat.ambient.r;
-//   color.g = ambient.g * s.mat.ambient.g;
-//   color.b = ambient.b * s.mat.ambient.b;
-//   color = ambient * s.mat.ambient;
-//   color = ambient * s->mat.ambient;
    color = ambient * i.s->mat.ambient;
    
    // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
    // calculate contributions for each light source
    for (light* l : lights) {
-      
-//      Color c = l->findLight(s, pS);
-//      Color c = l->findLight(s, pS, v, r);
       Color c = l->findLight(i.s, pS, v, r);
-      
       color = color + c;
    }
    
-   // reflection?
+   // reflection
    if (depth < maxDepth) {
-//      color = color + getColor(raySphereIntersection(point, r), depth+1, point);
-//      color = color + getColor(raySphereIntersection(point, r), depth+1, pS);
-//      color = color + i.s.mat.specular * getColor(raySphereIntersection(pS, r.normalized()), depth+1, pS);
       color = color + i.s->mat.specular * getColor(raySphereIntersection(pS, r.normalized()), depth+1, pS);
    }
    
@@ -155,6 +92,11 @@ int main(int argc, char** argv) {
    std::string file = argv[1];
    parseSceneFile(file);
    
+   if (shapes.size() <= 0) {
+      std::cout << "Error: No shapes found." << std::endl;
+      return(1);
+   }
+   
    // create image
    Image img = Image(img_width, img_height);
    
@@ -163,23 +105,19 @@ int main(int argc, char** argv) {
    float d = half_h / tanf(halfAngleVFOV * (M_PI / 180.0f));
    
    // raytrace :)
-   int i, j;
+   #pragma omp parallel for
    for (int i = 0; i < img_width; i++) {
       for (int j = 0; j < img_height; j++) {
          float u = (half_w - (width) * (i/width));
          float v = (half_h - (height) * (j/height));
          
-//         vec3 p = pos - d*fwd + u*right + v*up;
          vec3 p = camPos - d*fwd + u*right + v*up;
-//         vec3 dir = (p - pos).normalized();
          vec3 dir = (p - camPos).normalized();
          
-//         img.setPixel(i, j, getColor(raySphereIntersection(pos, dir), 1, pos));
          img.setPixel(i, j, getColor(raySphereIntersection(camPos, dir), 1, camPos));
       }
    }
    
-//   img.write("output/" + imgName.c_str());
    img.write(imgName.c_str());
    
    for (light* l : lights) {

@@ -37,17 +37,14 @@ float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
 //Scene (Sphere) Parameters
 vec3 spherePos = vec3(0,0,2);
 float sphereRadius = 1;
-//std::vector<sphere> spheres;
 std::vector<shape*> shapes;
 
 // Material parameters
 Color background = Color(0,0,0);
-//float material [14] = {0, 0, 0, 1, 1, 1, 0, 0, 0, 5, 0, 0, 0, 1};
 material cur = material(Color(0,0,0), Color(1,1,1), Color(0,0,0), Color(0,0,0), 5, 1);
 
 // Light parameters
 Color ambient = Color(0,0,0);
-//std::vector<light> lights;
 std::vector<light*> lights;
 
 
@@ -71,10 +68,8 @@ void parseSceneFile(std::string fileName){
       // really wish c++ switch statements worked on strings...
       if (word == "sphere:") {
          input >> spherePos.x >> spherePos.y >> spherePos.z >> sphereRadius;
-//         spheres.push_back(sphere(spherePos, sphereRadius, cur));
          shapes.push_back(new sphere(spherePos, sphereRadius, cur));
       } else if (word == "camera_pos:") {
-//         input >> pos.x >> pos.y >> pos.z;
          input >> camPos.x >> camPos.y >> camPos.z;
       } else if (word == "camera_fwd:") {
          input >> fwd.x >> fwd.y >> fwd.z;
@@ -111,13 +106,11 @@ void parseSceneFile(std::string fileName){
          Color c;
          vec3 d;
          input >> c.r >> c.g >> c.b >> d.x >> d.y >> d.z;
-//         lights.push_back(directionalLight(c,d));
          lights.push_back(new directionalLight(c,d));
       } else if (word == "point_light:") {
          Color c;
          vec3 p;
          input >> c.r >> c.g >> c.b >> p.x >> p.y >> p.z;
-//         lights.push_back(pointLight(c, p));
          lights.push_back(new pointLight(c, p));
       } else if (word == "spot_light:") {
          Color c;
@@ -125,7 +118,6 @@ void parseSceneFile(std::string fileName){
          float a1, a2;
          input >> c.r >> c.g >> c.b >> p.x >> p.y >> p.z >>
          d.x >> d.y >> d.z >> a1 >> a2;
-//         lights.push_back(spotLight(c, p, d, a1, a2));
          lights.push_back(new spotLight(c, p, d, a1, a2));
       } else if (word == "ambient_light:") {
          input >> ambient.r >> ambient.g >> ambient.b;

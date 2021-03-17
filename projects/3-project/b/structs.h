@@ -7,7 +7,7 @@
 #include <cstring>
 
 #include <vector>
-#include "image_lib.h" //Defines an image class and a color class
+#include "image_lib.h" // Defines an image class and a color class
 
 #include "parse.h"
 //#include "raytrace.cpp"
@@ -32,8 +32,7 @@ struct material {
    material(){}  // it complains if I don't have this
 };
 
-//struct intersection;
-
+// general shape class for spheres and triangles
 class shape {
 public:
    material mat;
@@ -43,11 +42,11 @@ public:
    virtual vec3 findNormal(vec3 hitPoint) = 0;
 };
 
-// point of intersection, sphere intersected with
+// contains intersection information
 struct intersection {
    bool hit;
    vec3 point;
-   vec3 ray;
+//   vec3 ray;
    shape* s;
    intersection(bool h, vec3 p, shape* sh) {
       hit = h;
@@ -56,24 +55,10 @@ struct intersection {
    }
 };
 
-// sphere object
-//struct sphere {  // position of center, radius, material
-//   vec3 pos;
-//   float r;
-//   material mat;
-//   sphere(vec3 position, float radius, material m) {
-//      pos = position;
-//      r = radius;
-//      mat = m;
-//   }
-//
-//   sphere() {}
-//};
 class sphere : public shape{  // position of center, radius, material
 public:
    vec3 pos;
    float r;
-//   material mat;
    sphere(vec3 position, float radius, material m) {
       pos = position;
       r = radius;
@@ -81,7 +66,6 @@ public:
    }
    
    intersection intersect(vec3 rayPos, vec3 dir) {
-//      return intersection(false, rayPos, this);
       intersection ret = intersection(false, rayPos, this);
       vec3 toStart = (rayPos - pos);
 
@@ -96,7 +80,7 @@ public:
          float t1 = (-b - sqrt(det)) / (2*a);
          if (t0 > 0 || t1 > 0) {
             ret.hit = true;
-//            ret.point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
+//            ret.point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;  // RIP
             ret.point = rayPos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
 
          }
@@ -106,9 +90,6 @@ public:
    }
 
    vec3 findNormal(vec3 hitPoint) {
-//      return (pos-hitPoint).normalized();
-//      std::cout << "for point " << hitPoint.x << ", " << hitPoint.y << ", " << hitPoint.z << " and position ";
-//      std::cout << this->pos.x << ", " << this->pos.y << ", " << this->pos.z << ": " << std::endl;
       return (hitPoint - this->pos).normalized();
    }
 
@@ -120,15 +101,10 @@ public:
 class light {
 public:
    Color i;
-//   vec3 pos, dir;
    vec3 p, dir;
    float a1, a2;
    
-   // refactor actual calculations out to structs to avoid issues
-//   virtual Color diffuse(material mat, vec3 lDir, vec3 n) = 0;
-//   virtual Color specular(material mat, vec3 n, vec3 h) = 0;
-//   virtual Color findLight(sphere s, vec3 point) = 0;
-//   virtual Color findLight(sphere* s, vec3 point, vec3 v, vec3 r) = 0;
+   // refactor actual lighting calculations out to light classes to avoid issues
    virtual Color findLight(shape* s, vec3 point, vec3 v, vec3 r) = 0;
 };
 
@@ -136,31 +112,21 @@ class pointLight : public light {
 public:
    pointLight(Color intensity, vec3 position) {
       i = intensity;
-//      pos = position;
       p = position;
    }
    
-//   Color findLight(sphere s, vec3 point) override {
-//   Color findLight(sphere s, vec3 point, vec3 v, vec3 r) override {
-//   Color findLight(sphere* s, vec3 point, vec3 v, vec3 r) override {
    Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override {
-//      std::cout << "find light" << std::endl;
       vec3 toLight = p - point;
       vec3 lDir = toLight.normalized();
       Color c = Color(0,0,0);
-      
-//      sphere* s = (sphere*) sh;
       
       // don't add light if point is in shadow
       if (raySphereIntersection(point, lDir).hit) return c;
       
       // normal
-//      vec3 n = (point - s.pos).normalized();
-//      vec3 n = (point - s->pos).normalized();
       vec3 n = s->findNormal(point);
       
       // halfway vector
-//      vec3 h = ((pos - point).normalized() + lDir).normalized();
       vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from reflected point?
       
 //      vec3 v2 = (pos-point).normalized();
@@ -172,7 +138,6 @@ public:
       float dMult = fmax(0, dot(n, lDir));
       
       // specular factor -- v dot r
-//      float sMult = pow(fmax(0, dot(n, h)), s.mat.ns);
       float sMult = pow(fmax(0, dot(n, h)), s->mat.ns);
 //      float sMult = pow(fmax(0, dot(v,r.normalized())), s.mat.ns);
 //      float sMult = pow(fmax(0, dot(v2,r.normalized())), s.mat.ns);
@@ -193,23 +158,18 @@ public:
       dir = direction;
    }
    
-//   Color findLight(sphere s, vec3 point) override {
-//   Color findLight(sphere s, vec3 point, vec3 v, vec3 r) override {
    Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override {
       Color c = Color(0,0,0);
       vec3 toLight = -1 * dir;
       vec3 lDir = toLight.normalized();
-//      sphere* s = (sphere*) sh;
       
+      // shadow
       if (raySphereIntersection(point, lDir).hit) return c;
       
       // normal
-//      vec3 n = (point - s.pos).normalized();
-//      vec3 n = (point - s->pos).normalized();
       vec3 n = s->findNormal(point);
       
       // halfway vector
-//      vec3 h = ((pos - point).normalized() + lDir).normalized();
       vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from reflected point?
       
       // diffuse factor
@@ -232,24 +192,13 @@ class spotLight : public light {
 public:
    spotLight(Color intensity, vec3 position, vec3 direction, float angle1, float angle2) {
       i = intensity;
-//      pos = position;
       p = position;
       dir = direction;
       a1 = angle1;
       a2 = angle2;
    }
    
-   // neither have these
-//   Color diffuse(material mat, vec3 lDir, vec3 n) override {
-//      return Color(0,0,0);
-//   }
-//
-//   Color specular(material mat, vec3 n, vec3 h) override {
-//      Color c = Color(0,0,0);
-//
-//      return c;
-//   }
-//   Color findLight(sphere s, vec3 point) override
+   // not implemented
    Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override
    {return Color(0,0,0);}
 
