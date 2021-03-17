@@ -26,6 +26,10 @@ vec3 up = vec3(0,1,0).normalized();
 vec3 right = vec3(-1,0,0).normalized();
 float halfAngleVFOV = 45;
 
+// Misc parameters
+int maxDepth = 5;
+float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
+
 // if I include this at the top, things don't work
 // I do not know how to C++
 #include "structs.h"
@@ -33,7 +37,8 @@ float halfAngleVFOV = 45;
 //Scene (Sphere) Parameters
 vec3 spherePos = vec3(0,0,2);
 float sphereRadius = 1;
-std::vector<sphere> spheres;
+//std::vector<sphere> spheres;
+std::vector<shape*> shapes;
 
 // Material parameters
 Color background = Color(0,0,0);
@@ -44,10 +49,6 @@ material cur = material(Color(0,0,0), Color(1,1,1), Color(0,0,0), Color(0,0,0), 
 Color ambient = Color(0,0,0);
 //std::vector<light> lights;
 std::vector<light*> lights;
-
-// Misc parameters
-int maxDepth = 5;
-float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
 
 
 void parseSceneFile(std::string fileName){
@@ -70,7 +71,8 @@ void parseSceneFile(std::string fileName){
       // really wish c++ switch statements worked on strings...
       if (word == "sphere:") {
          input >> spherePos.x >> spherePos.y >> spherePos.z >> sphereRadius;
-         spheres.push_back(sphere(spherePos, sphereRadius, cur));
+//         spheres.push_back(sphere(spherePos, sphereRadius, cur));
+         shapes.push_back(new sphere(spherePos, sphereRadius, cur));
       } else if (word == "camera_pos:") {
 //         input >> pos.x >> pos.y >> pos.z;
          input >> camPos.x >> camPos.y >> camPos.z;
