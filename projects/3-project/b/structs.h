@@ -14,7 +14,9 @@
 
 // forward declaration for the forward declaration. whyyyyy
 struct intersection;
-intersection raySphereIntersection(vec3 pos, vec3 dir);
+//intersection raySphereIntersection(vec3 pos, vec3 dir);
+intersection rayShapeIntersection(vec3 pos, vec3 dir);
+Color getColor(intersection, int, vec3);
 
 // material for objects
 struct material {
@@ -96,6 +98,110 @@ public:
    sphere() {}
 };
 
+class triangle : public shape {
+public:
+   vec3 vertices[3];
+   
+   intersection intersect(vec3 rayPos, vec3 dir) {  // assuming ray starts in front of plane
+//      std::cout << "rayPos: " << rayPos.x << " " << rayPos.y << " " << rayPos.z << std::endl;
+//      std::cout << "dir: " << dir.x << " " << dir.y << " " << dir.z << std::endl;
+      // t = -(p0 dot N + d) / (V dot N)
+      // ray plane intersection
+      vec3 n = planeNormal();
+      if (dot(dir, n) == 0) return intersection(false, vec3(0,0,0), this);  // ray parallel to plane
+      if (dot(dir, n) > 0) n = -1 * n;
+      
+//      std::cout << "normal: " << n.x << " " << n.y << " " << n.z << std::endl;
+      
+      float d = -dot(vertices[0], n);
+      float t = -(dot(rayPos, n) + d) / dot(dir, n);
+      
+//      std::cout << "t: " << t << std::endl;
+      
+      if (t <= displace) return intersection(false, vec3(0,0,0), this);
+      
+      // test if inside triangle
+      vec3 p = rayPos + t*dir;
+      vec3 e1 = vertices[1] - vertices[0];
+      vec3 e2 = vertices[2] - vertices[1];
+      vec3 e3 = vertices[0] - vertices[2];
+      
+      float u = dot(n, cross(e1, (p-vertices[0])));
+      float v = dot(n, cross(e2, (p-vertices[1])));
+      float w = dot(n, cross(e3, (p-vertices[2])));
+      
+      if (u<0 && v<0 && w<0 || u>0 && v>0 && w>0) {
+         return intersection(true, p, this);
+      }
+      
+      // BARYCENTRIC
+//      float a1 = cross(p-vertices[0], e1).length() / 2;
+//      float a2 = cross(p-vertices[1], e2).length() / 2;
+//      float a3 = cross(p-vertices[2], e3).length() / 2;
+//
+//      float a = cross(e1,e2).length() / 2;
+//
+////      std::cout << "a: " << a << " a1+a2+a3: " << (a1+a2+a3) << std::endl;
+//
+//      if (abs(a - (a1+a2+a3)) < 0.0001) {  // hit
+////         std::cout << "hit" << std::endl;
+//         return intersection(true, p, this);
+//      }
+      
+      return intersection(false, vec3(0,0,0), this);
+   }
+   
+   virtual vec3 findNormal(vec3) = 0;
+   virtual vec3 planeNormal() = 0;
+   
+};
+
+class flatTriangle: public triangle {
+public:
+   vec3 normal;
+   flatTriangle(vec3 v0, vec3 v1, vec3 v2) {
+      vertices[0] = v0;
+      vertices[1] = v1;
+      vertices[2] = v2;
+      
+      // TODO: compute normal - check ordering!!
+      normal = cross((v1 - v0), (v2 - v0)).normalized();
+//      std::cout << "normal: " << normal.x << " " << normal.y << " " << normal.z << std::endl;
+   }
+   
+   vec3 findNormal(vec3 hitPoint) override {
+      return normal;
+   }
+   
+   vec3 planeNormal() override {
+      return normal;
+   }
+};
+
+class normTriangle: public triangle {
+public:
+   vec3 normals[3];
+   normTriangle(vec3 v0, vec3 v1, vec3 v2, vec3 n0, vec3 n1, vec3 n2) {
+      vertices[0] = v0;
+      vertices[1] = v1;
+      vertices[2] = v2;
+      
+      normals[0] = n0;
+      normals[1] = n1;
+      normals[2] = n2;
+   }
+   
+   vec3 planeNormal() override{  // TODO: need to check ordering!! somehow!!
+      return cross((vertices[1] - vertices[0]), (vertices[2] - vertices[0])).normalized();
+   }
+   vec3 findNormal(vec3 hitPoint) override {
+      // TODO: calculate normal according to barycentric coords
+//      return vec3(0,0,0);
+      return planeNormal();
+   }
+   
+};
+
  
 // lights - general class for point, directional, and spot lights
 class light {
@@ -106,6 +212,7 @@ public:
    
    // refactor actual lighting calculations out to light classes to avoid issues
    virtual Color findLight(shape* s, vec3 point, vec3 v, vec3 r) = 0;
+   virtual Color refract(shape* s, vec3 point, vec3 n) = 0;
 };
 
 class pointLight : public light {
@@ -121,13 +228,16 @@ public:
       Color c = Color(0,0,0);
       
       // don't add light if point is in shadow
-      if (raySphereIntersection(point, lDir).hit) return c;
+//      if (raySphereIntersection(point, lDir).hit) return c;
+      if (rayShapeIntersection(point, lDir).hit) return c;
       
       // normal
       vec3 n = s->findNormal(point);
+      if (dot(-1 * lDir, n) > 0) n = -1 * n;
       
       // halfway vector
-      vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from reflected point?
+//      vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from previous position?
+      vec3 h = (v.normalized() + lDir).normalized();
       
 //      vec3 v2 = (pos-point).normalized();
       
@@ -149,6 +259,22 @@ public:
       
       return c;
    }
+   
+   Color refract(shape* s, vec3 point, vec3 n) {
+      // refraction vector
+      vec3 lDir = (p - point).normalized();
+      float cosi = dot(n, lDir);
+      float thetai = acos(cosi);
+      float nr = s->mat.ior;
+      // cos(sin-1(theta r)) = (ni/nr) *sin(theta i)
+      float thetar = asin(sin(thetai) / nr);
+      float cosr = cos(thetar);
+
+      vec3 t = (cosi/nr) * n - (1.0/nr) * lDir;
+
+//      color = color + getColor(rayShapeIntersection(pS, t.normalized()), depth + 1, pS);
+      return getColor(rayShapeIntersection(point, t.normalized()), maxDepth, point);
+   }
 };
 
 class directionalLight : public light {
@@ -164,13 +290,16 @@ public:
       vec3 lDir = toLight.normalized();
       
       // shadow
-      if (raySphereIntersection(point, lDir).hit) return c;
+//      if (raySphereIntersection(point, lDir).hit) return c;
+      if (rayShapeIntersection(point, lDir).hit) return c;
       
       // normal
       vec3 n = s->findNormal(point);
+      if (dot(-1 * lDir, n) > 0) n = -1 * n;
       
       // halfway vector
-      vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from reflected point?
+//      vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from reflected point?
+      vec3 h = (v.normalized() + lDir).normalized();
       
       // diffuse factor
       float dMult = fmax(0, dot(n, lDir));
@@ -185,6 +314,9 @@ public:
       c.b += i.b * (s->mat.diffuse.b * dMult + s->mat.specular.b * sMult);
       
       return c;
+   }
+   Color refract(shape* s, vec3 point, vec3 n) {
+      return Color();
    }
 };
 
@@ -201,6 +333,8 @@ public:
    // not implemented
    Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override
    {return Color(0,0,0);}
-
+   Color refract(shape* s, vec3 point, vec3 n) {
+      return Color();
+   }
 };
 #endif

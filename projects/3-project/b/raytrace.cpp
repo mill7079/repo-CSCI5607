@@ -3,22 +3,27 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-//Images Lib includes:
-#define STB_IMAGE_IMPLEMENTATION //only place once in one .cpp file
-#define STB_IMAGE_WRITE_IMPLEMENTATION //only place once in one .cpp file
-#include "image_lib.h" //Defines an image class and a color class
+// Images Lib includes:
+#define STB_IMAGE_IMPLEMENTATION // only place once in one .cpp file
+#define STB_IMAGE_WRITE_IMPLEMENTATION // only place once in one .cpp file
+#include "image_lib.h" // Defines an image class and a color class
 
-//#Vec3 Library
+// High resolution timer
+#include <chrono>
+
+// Vec3 Library
 #include "vec3.h"
 
 // Scene parser with scene variables
 #include "parse.h"
 #include "structs.h"
 
+// infinity
 #include <limits>
 
 // test if ray defined by pos and dir intersects with any shapes in scene
-intersection raySphereIntersection(vec3 pos, vec3 dir) {
+//intersection raySphereIntersection(vec3 pos, vec3 dir) {
+intersection rayShapeIntersection(vec3 pos, vec3 dir) {
    float minMag = INFINITY;
    vec3 point = vec3(0,0,0);
    sphere* hitSphere = new sphere(point, 1, cur);
@@ -75,9 +80,13 @@ Color getColor(intersection i, int depth, vec3 initPos) {
       color = color + c;
    }
    
-   // reflection
+   // reflection/refraction
    if (depth < maxDepth) {
-      color = color + i.s->mat.specular * getColor(raySphereIntersection(pS, r.normalized()), depth+1, pS);
+      color = color + i.s->mat.specular * getColor(rayShapeIntersection(pS, r.normalized()), depth+1, pS);
+      
+//      for (light* l : lights) {
+//         color = color + l->refract(i.s, pS, n);
+//      }
    }
    
    return color;
@@ -105,6 +114,7 @@ int main(int argc, char** argv) {
    float d = half_h / tanf(halfAngleVFOV * (M_PI / 180.0f));
    
    // raytrace :)
+   auto t_start = std::chrono::high_resolution_clock::now();
    #pragma omp parallel for
    for (int i = 0; i < img_width; i++) {
       for (int j = 0; j < img_height; j++) {
@@ -114,9 +124,11 @@ int main(int argc, char** argv) {
          vec3 p = camPos - d*fwd + u*right + v*up;
          vec3 dir = (p - camPos).normalized();
          
-         img.setPixel(i, j, getColor(raySphereIntersection(camPos, dir), 1, camPos));
+         img.setPixel(i, j, getColor(rayShapeIntersection(camPos, dir), 1, camPos));
       }
    }
+   auto t_end = std::chrono::high_resolution_clock::now();
+   printf("Rendering took %.2f ms\n",std::chrono::duration<double, std::milli>(t_end-t_start).count());
    
    img.write(imgName.c_str());
    

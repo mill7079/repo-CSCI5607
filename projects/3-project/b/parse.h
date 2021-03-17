@@ -21,14 +21,14 @@ std::string imgName = "raytraced.bmp";
 //Camera Parameters
 vec3 camPos = vec3(0,0,0);
 //vec3 fwd = vec3(0,0,-1).normalized();
-vec3 fwd = vec3(0,0,1).normalized();
+vec3 fwd = vec3(0,0,-1).normalized();
 vec3 up = vec3(0,1,0).normalized();
-vec3 right = vec3(-1,0,0).normalized();
+vec3 right = vec3(1,0,0).normalized();
 float halfAngleVFOV = 45;
 
 // Misc parameters
 int maxDepth = 5;
-float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
+float displace = 0.001;  // move shadow ray out from sphere to avoid speckling
 
 // if I include this at the top, things don't work
 // I do not know how to C++
@@ -38,6 +38,12 @@ float displace = 0.0001;  // move shadow ray out from sphere to avoid speckling
 vec3 spherePos = vec3(0,0,2);
 float sphereRadius = 1;
 std::vector<shape*> shapes;
+
+// Triangle parameters
+int maxVertices;
+int maxNormals;
+std::vector<vec3> vertices;
+std::vector<vec3> normals;
 
 // Material parameters
 Color background = Color(0,0,0);
@@ -83,6 +89,26 @@ void parseSceneFile(std::string fileName){
          input >> img_width >> img_height;
       } else if (word == "output_image:") {
          input >> imgName;
+      } else if (word == "max_vertices:") {
+         input >> maxVertices;
+      } else if (word == "max_normals:") {
+         input >> maxNormals;
+      } else if (word == "vertex:") {
+         vec3 v;
+         input >> v.x >> v.y >> v.z;
+         vertices.push_back(v);
+      } else if (word == "normal:") {
+         vec3 n;
+         input >> n.x >> n.y >> n.z;
+         normals.push_back(n);
+      } else if (word == "triangle:") {
+         int v0,v1,v2;
+         input >> v0 >> v1 >> v2;
+         shapes.push_back(new flatTriangle(vertices[v0], vertices[v1], vertices[v2]));
+      } else if (word == "normal_triangle:") {
+         int v0,v1,v2,n0,n1,n2;
+         input >> v0 >> v1 >> v2 >> n0 >> n1 >> n2;
+         shapes.push_back(new normTriangle(vertices[v0], vertices[v1], vertices[v2], normals[n0], normals[n1], normals[n2]));
       } else if (word == "background:") {
          input >> background.r >> background.g >> background.b;
       } else if (word == "material:") {
