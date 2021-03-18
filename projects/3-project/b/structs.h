@@ -127,27 +127,16 @@ public:
       vec3 e2 = vertices[2] - vertices[1];
       vec3 e3 = vertices[0] - vertices[2];
       
-      float u = dot(n, cross(e1, (p-vertices[0])));
-      float v = dot(n, cross(e2, (p-vertices[1])));
-      float w = dot(n, cross(e3, (p-vertices[2])));
-      
-      if (u<0 && v<0 && w<0 || u>0 && v>0 && w>0) {
+      // barycentric
+      float a1 = cross(p-vertices[0], e1).length() / 2;
+      float a2 = cross(p-vertices[1], e2).length() / 2;
+      float a3 = cross(p-vertices[2], e3).length() / 2;
+
+      float a = cross(e1,e2).length() / 2;
+
+      if (abs(a - (a1+a2+a3)) < 0.0001) {  // hit
          return intersection(true, p, this);
       }
-      
-      // BARYCENTRIC
-//      float a1 = cross(p-vertices[0], e1).length() / 2;
-//      float a2 = cross(p-vertices[1], e2).length() / 2;
-//      float a3 = cross(p-vertices[2], e3).length() / 2;
-//
-//      float a = cross(e1,e2).length() / 2;
-//
-////      std::cout << "a: " << a << " a1+a2+a3: " << (a1+a2+a3) << std::endl;
-//
-//      if (abs(a - (a1+a2+a3)) < 0.0001) {  // hit
-////         std::cout << "hit" << std::endl;
-//         return intersection(true, p, this);
-//      }
       
       return intersection(false, vec3(0,0,0), this);
    }
@@ -206,9 +195,23 @@ public:
 //      return cross((vertices[1] - vertices[0]), (vertices[2] - vertices[0])).normalized();
 //   }
    vec3 findNormal(vec3 hitPoint) override {
-      // TODO: calculate normal according to barycentric coords
 //      return vec3(0,0,0);
-      return planeNormal((hitPoint - camPos).normalized());
+//      return planeNormal((hitPoint - camPos).normalized());
+      // edges
+      vec3 e1 = vertices[1] - vertices[0];
+      vec3 e2 = vertices[2] - vertices[1];
+      vec3 e3 = vertices[0] - vertices[2];
+      
+      // areas
+      float a = cross(e1,e2).length() / 2;
+      float a1 = cross(hitPoint-vertices[0], e1).length() / 2;
+      float a2 = cross(hitPoint-vertices[1], e2).length() / 2;
+      float a3 = cross(hitPoint-vertices[2], e3).length() / 2;
+
+      // interpolate normals according to area weights
+      return ((a1/a) * normals[2] + (a2/a) * normals[0] + (a3/a) * normals[1]).normalized();
+      
+      
    }
    
 };
