@@ -233,10 +233,10 @@ public:
       
       // normal
       vec3 n = s->findNormal(point);
-      if (dot(-1 * lDir, n) > 0) n = -1 * n;
+//      if (dot(-1 * lDir, n) < 0) n = -1 * n;
       
       // halfway vector
-//      vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from previous position?
+//      vec3 h = ((camPos - point).normalized() + lDir).normalized();
       vec3 h = (v.normalized() + lDir).normalized();
       
 //      vec3 v2 = (pos-point).normalized();
@@ -295,10 +295,10 @@ public:
       
       // normal
       vec3 n = s->findNormal(point);
-      if (dot(-1 * lDir, n) > 0) n = -1 * n;
+//      if (dot(-1 * lDir, n) > 0) n = -1 * n;
       
       // halfway vector
-//      vec3 h = ((camPos - point).normalized() + lDir).normalized();  // TODO: check camPos? shouldn't it be from reflected point?
+//      vec3 h = ((camPos - point).normalized() + lDir).normalized();
       vec3 h = (v.normalized() + lDir).normalized();
       
       // diffuse factor

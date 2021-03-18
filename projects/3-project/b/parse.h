@@ -28,7 +28,7 @@ float halfAngleVFOV = 45;
 
 // Misc parameters
 int maxDepth = 5;
-float displace = 0.001;  // move shadow ray out from sphere to avoid speckling
+float displace = 0.01;  // move shadow ray out from sphere to avoid speckling
 
 // if I include this at the top, things don't work
 // I do not know how to C++

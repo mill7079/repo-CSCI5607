@@ -55,6 +55,7 @@ Color getColor(intersection i, int depth, vec3 initPos) {
 //   vec3 n = point - s->pos;
 //   n = n.normalized();
    vec3 n = i.s->findNormal(point);
+//   if (dot((initPos - point).normalized(), n) > 0) n = -1 * n;
    
    // avoid hitting current sphere with shadow ray
    vec3 pS = point + (displace * n);
