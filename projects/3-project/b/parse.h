@@ -104,11 +104,11 @@ void parseSceneFile(std::string fileName){
       } else if (word == "triangle:") {
          int v0,v1,v2;
          input >> v0 >> v1 >> v2;
-         shapes.push_back(new flatTriangle(vertices[v0], vertices[v1], vertices[v2]));
+         shapes.push_back(new flatTriangle(vertices[v0], vertices[v1], vertices[v2], cur));
       } else if (word == "normal_triangle:") {
          int v0,v1,v2,n0,n1,n2;
          input >> v0 >> v1 >> v2 >> n0 >> n1 >> n2;
-         shapes.push_back(new normTriangle(vertices[v0], vertices[v1], vertices[v2], normals[n0], normals[n1], normals[n2]));
+         shapes.push_back(new normTriangle(vertices[v0], vertices[v1], vertices[v2], normals[n0], normals[n1], normals[n2], cur));
       } else if (word == "background:") {
          input >> background.r >> background.g >> background.b;
       } else if (word == "material:") {

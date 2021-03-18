@@ -107,9 +107,10 @@ public:
 //      std::cout << "dir: " << dir.x << " " << dir.y << " " << dir.z << std::endl;
       // t = -(p0 dot N + d) / (V dot N)
       // ray plane intersection
-      vec3 n = planeNormal();
+//      vec3 n = planeNormal();
+      vec3 n = planeNormal(dir);
       if (dot(dir, n) == 0) return intersection(false, vec3(0,0,0), this);  // ray parallel to plane
-      if (dot(dir, n) > 0) n = -1 * n;
+//      if (dot(dir, n) > 0) n = -1 * n;
       
 //      std::cout << "normal: " << n.x << " " << n.y << " " << n.z << std::endl;
       
@@ -151,21 +152,30 @@ public:
       return intersection(false, vec3(0,0,0), this);
    }
    
+   vec3 planeNormal(vec3 rayDir) {
+      vec3 n = cross((vertices[1] - vertices[0]), (vertices[2] - vertices[0])).normalized();
+      if (dot(n, rayDir) > 0) {
+         n = cross((vertices[2] - vertices[0]), (vertices[1] - vertices[0])).normalized();
+      }
+      
+      return n;
+   };
+   
    virtual vec3 findNormal(vec3) = 0;
-   virtual vec3 planeNormal() = 0;
    
 };
 
 class flatTriangle: public triangle {
 public:
    vec3 normal;
-   flatTriangle(vec3 v0, vec3 v1, vec3 v2) {
+   flatTriangle(vec3 v0, vec3 v1, vec3 v2, material m) {
       vertices[0] = v0;
       vertices[1] = v1;
       vertices[2] = v2;
       
-      // TODO: compute normal - check ordering!!
-      normal = cross((v1 - v0), (v2 - v0)).normalized();
+      mat = m;
+      
+      normal = planeNormal((v0 - camPos).normalized());
 //      std::cout << "normal: " << normal.x << " " << normal.y << " " << normal.z << std::endl;
    }
    
@@ -173,15 +183,14 @@ public:
       return normal;
    }
    
-   vec3 planeNormal() override {
-      return normal;
-   }
+//   vec3 planeNormal(vec3 rayDir) override {
+//   }
 };
 
 class normTriangle: public triangle {
 public:
    vec3 normals[3];
-   normTriangle(vec3 v0, vec3 v1, vec3 v2, vec3 n0, vec3 n1, vec3 n2) {
+   normTriangle(vec3 v0, vec3 v1, vec3 v2, vec3 n0, vec3 n1, vec3 n2, material m) {
       vertices[0] = v0;
       vertices[1] = v1;
       vertices[2] = v2;
@@ -189,15 +198,17 @@ public:
       normals[0] = n0;
       normals[1] = n1;
       normals[2] = n2;
+      
+      mat = m;
    }
    
-   vec3 planeNormal() override{  // TODO: need to check ordering!! somehow!!
-      return cross((vertices[1] - vertices[0]), (vertices[2] - vertices[0])).normalized();
-   }
+//   vec3 planeNormal(vec3 rayDir) override{  // TODO: need to check ordering!! somehow!!
+//      return cross((vertices[1] - vertices[0]), (vertices[2] - vertices[0])).normalized();
+//   }
    vec3 findNormal(vec3 hitPoint) override {
       // TODO: calculate normal according to barycentric coords
 //      return vec3(0,0,0);
-      return planeNormal();
+      return planeNormal((hitPoint - camPos).normalized());
    }
    
 };

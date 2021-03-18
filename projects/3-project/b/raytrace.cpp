@@ -73,6 +73,7 @@ Color getColor(intersection i, int depth, vec3 initPos) {
    
    // start with ambient light
    color = ambient * i.s->mat.ambient;
+//   std::cout << i.s->mat.ambient.r << " " << i.s->mat.ambient.g << " " << i.s->mat.ambient.b << std::endl;
    
    // kdI*max(0, n dot l) + ksI*max(0, n dot h)^p
    // calculate contributions for each light source
