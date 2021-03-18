@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
    
    // raytrace :)
    auto t_start = std::chrono::high_resolution_clock::now();
-   #pragma omp parallel for
+   #pragma omp parallel for schedule (dynamic, 5)
    for (int i = 0; i < img_width; i++) {
       for (int j = 0; j < img_height; j++) {
          float u = (half_w - (width) * (i/width));
