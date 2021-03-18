@@ -243,7 +243,9 @@ public:
       
       // don't add light if point is in shadow
 //      if (raySphereIntersection(point, lDir).hit) return c;
-      if (rayShapeIntersection(point, lDir).hit) return c;
+      intersection hit = rayShapeIntersection(point, lDir);
+      if (hit.hit && toLight.length() > (hit.point - point).length()) return c;
+//      if (rayShapeIntersection(point, lDir).hit) return c;
       
       // normal
       vec3 n = s->findNormal(point);
