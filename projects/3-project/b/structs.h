@@ -117,8 +117,6 @@ public:
       float d = -dot(vertices[0], n);
       float t = -(dot(rayPos, n) + d) / dot(dir, n);
       
-//      std::cout << "t: " << t << std::endl;
-      
       if (t <= displace) return intersection(false, vec3(0,0,0), this);
       
       // test if inside triangle
@@ -127,16 +125,24 @@ public:
       vec3 e2 = vertices[2] - vertices[1];
       vec3 e3 = vertices[0] - vertices[2];
       
-      // barycentric
-      float a1 = cross(p-vertices[0], e1).length() / 2;
-      float a2 = cross(p-vertices[1], e2).length() / 2;
-      float a3 = cross(p-vertices[2], e3).length() / 2;
-
-      float a = cross(e1,e2).length() / 2;
-
-      if (abs(a - (a1+a2+a3)) < 0.0001) {  // hit
+      float u = dot(n, cross(e1, (p-vertices[0])));
+      float v = dot(n, cross(e2, (p-vertices[1])));
+      float w = dot(n, cross(e3, (p-vertices[2])));
+      
+      if (u<0 && v<0 && w<0 || u>0 && v>0 && w>0) {
          return intersection(true, p, this);
       }
+      
+      // barycentric
+//      float a1 = cross(p-vertices[0], e1).length() / 2;
+//      float a2 = cross(p-vertices[1], e2).length() / 2;
+//      float a3 = cross(p-vertices[2], e3).length() / 2;
+//
+//      float a = cross(e1,e2).length() / 2;
+//
+//      if (abs(a - (a1+a2+a3)) < 0.0001) {  // hit
+//         return intersection(true, p, this);
+//      }
       
       return intersection(false, vec3(0,0,0), this);
    }
@@ -226,7 +232,7 @@ public:
    
    // refactor actual lighting calculations out to light classes to avoid issues
    virtual Color findLight(shape* s, vec3 point, vec3 v, vec3 r) = 0;
-   virtual Color refract(shape* s, vec3 point, vec3 n) = 0;
+//   virtual Color refract(shape* s, vec3 point, vec3 n) = 0;
 };
 
 class pointLight : public light {
@@ -276,28 +282,28 @@ public:
       return c;
    }
    
-   Color refract(shape* s, vec3 point, vec3 n) {
-      // refraction vector
-      vec3 lDir = (p - point).normalized();
-      float cosi = dot(n, lDir);
-      float thetai = acos(cosi);
-      float nr = s->mat.ior;
-      // cos(sin-1(theta r)) = (ni/nr) *sin(theta i)
-      float thetar = asin(sin(thetai) / nr);
-      float cosr = cos(thetar);
-
-      vec3 t = (cosi/nr) * n - (1.0/nr) * lDir;
-
-//      color = color + getColor(rayShapeIntersection(pS, t.normalized()), depth + 1, pS);
-      return getColor(rayShapeIntersection(point, t.normalized()), maxDepth, point);
-   }
+//   Color refract(shape* s, vec3 point, vec3 n) {
+//      // refraction vector
+//      vec3 lDir = (p - point).normalized();
+//      float cosi = dot(n, lDir);
+//      float thetai = acos(cosi);
+//      float nr = s->mat.ior;
+//      // cos(sin-1(theta r)) = (ni/nr) *sin(theta i)
+//      float thetar = asin(sin(thetai) / nr);
+//      float cosr = cos(thetar);
+//
+//      vec3 t = (cosi/nr) * n - (1.0/nr) * lDir;
+//
+////      color = color + getColor(rayShapeIntersection(pS, t.normalized()), depth + 1, pS);
+//      return getColor(rayShapeIntersection(point, t.normalized()), maxDepth, point);
+//   }
 };
 
 class directionalLight : public light {
 public:
    directionalLight(Color intensity, vec3 direction) {
       i = intensity;
-      dir = direction;
+      dir = direction.normalized();
    }
    
    Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override {
@@ -307,7 +313,9 @@ public:
       
       // shadow
 //      if (raySphereIntersection(point, lDir).hit) return c;
-      if (rayShapeIntersection(point, lDir).hit) return c;
+//      if (rayShapeIntersection(point, lDir).hit) return c;
+      intersection hit = rayShapeIntersection(point, lDir);
+      if (hit.hit && toLight.length() > (hit.point - point).length()) return c;
       
       // normal
       vec3 n = s->findNormal(point);
@@ -331,9 +339,9 @@ public:
       
       return c;
    }
-   Color refract(shape* s, vec3 point, vec3 n) {
-      return Color();
-   }
+//   Color refract(shape* s, vec3 point, vec3 n) {
+//      return Color();
+//   }
 };
 
 class spotLight : public light {
@@ -341,16 +349,65 @@ public:
    spotLight(Color intensity, vec3 position, vec3 direction, float angle1, float angle2) {
       i = intensity;
       p = position;
-      dir = direction;
-      a1 = angle1;
-      a2 = angle2;
+      dir = direction.normalized();
+      a1 = angle1 * (M_PI / 180.0f);
+      a2 = angle2 * (M_PI / 180.0f);
+//      std::cout << "angle1: " << a1 << " angle2: " << a2 << std::endl;
+//      std::cout << "pi/4: " << (M_PI/4.0f) << " pi/2: " << (M_PI/2.0f) << std::endl;
+//      a1 = angle1;
+//      a2 = angle2;
    }
    
-   // not implemented
-   Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override
-   {return Color(0,0,0);}
-   Color refract(shape* s, vec3 point, vec3 n) {
-      return Color();
+   
+   Color findLight(shape* s, vec3 point, vec3 v, vec3 r) override {
+      vec3 toLight = p - point;
+      vec3 lDir = toLight.normalized();
+      Color c = Color(0,0,0);
+
+      float angle = acos(dot(dir, (point - p).normalized()));  // maybe convert degrees/radians? idk
+
+      // if outside angle, no contribution
+      if (angle > a2) return c;
+//      std::cout << "pi/4: " << (M_PI/4.0f) << " pi/2: " << (M_PI/2.0f) << std::endl;
+//      std::cout << "angle: " << angle << std::endl;
+
+      // point light
+      // shadow
+      intersection hit = rayShapeIntersection(point, lDir);
+      if (hit.hit && toLight.length() > (hit.point - point).length()) return c;
+
+      // normal
+      vec3 n = s->findNormal(point);
+
+      // halfway vector
+      vec3 h = (v.normalized() + lDir).normalized();
+
+      // attenuate with distance from light (1/d^2)
+      float dSquare = pow(toLight.length(), 2);
+
+      // diffuse factor
+      float dMult = fmax(0, dot(n, lDir));
+
+      // specular factor -- v dot r
+      float sMult = pow(fmax(0, dot(n, h)), s->mat.ns);
+
+      // calculate light/material contributions
+      c.r += i.r * ((s->mat.diffuse.r * dMult) / dSquare + (s->mat.specular.r * sMult)/dSquare);
+      c.g += i.g * ((s->mat.diffuse.g * dMult) / dSquare + (s->mat.specular.g * sMult)/dSquare);
+      c.b += i.b * ((s->mat.diffuse.b * dMult) / dSquare + (s->mat.specular.b * sMult)/dSquare);
+
+
+      if (angle >= a1) {
+//         std::cout << "hello" << std::endl;
+//         float falloff = 1/pow(angle/a2, 2);
+//         float falloff = angle/a2;
+         float falloff = 1 - ((angle - a1) / (a2 - a1));
+         c.r *= falloff;
+         c.g *= falloff;
+         c.b *= falloff;
+      }
+
+      return c;
    }
 };
 #endif
