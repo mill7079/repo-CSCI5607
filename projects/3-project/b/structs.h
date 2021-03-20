@@ -102,17 +102,17 @@ class triangle : public shape {
 public:
    vec3 vertices[3];
    
+   float side(vec3 p1, vec3 p2, vec3 a, vec3 b) {
+      vec3 cp1 = cross(b-a, p1-a);
+      vec3 cp2 = cross(b-a, p2-a);
+      return dot(cp1, cp2);
+   }
    intersection intersect(vec3 rayPos, vec3 dir) {  // assuming ray starts in front of plane
-//      std::cout << "rayPos: " << rayPos.x << " " << rayPos.y << " " << rayPos.z << std::endl;
-//      std::cout << "dir: " << dir.x << " " << dir.y << " " << dir.z << std::endl;
       // t = -(p0 dot N + d) / (V dot N)
       // ray plane intersection
-//      vec3 n = planeNormal();
       vec3 n = planeNormal(dir);
       if (dot(dir, n) == 0) return intersection(false, vec3(0,0,0), this);  // ray parallel to plane
 //      if (dot(dir, n) > 0) n = -1 * n;
-      
-//      std::cout << "normal: " << n.x << " " << n.y << " " << n.z << std::endl;
       
       float d = -dot(vertices[0], n);
       float t = -(dot(rayPos, n) + d) / dot(dir, n);
@@ -125,11 +125,12 @@ public:
       vec3 e2 = vertices[2] - vertices[1];
       vec3 e3 = vertices[0] - vertices[2];
       
-      float u = dot(n, cross(e1, (p-vertices[0])));
-      float v = dot(n, cross(e2, (p-vertices[1])));
-      float w = dot(n, cross(e3, (p-vertices[2])));
+      // same side test - apparently more accurate than barycentric
+      float s1 = side(p, vertices[0], vertices[1], vertices[2]);
+      float s2 = side(p, vertices[1], vertices[0], vertices[2]);
+      float s3 = side(p, vertices[2], vertices[0], vertices[1]);
       
-      if (u<0 && v<0 && w<0 || u>0 && v>0 && w>0) {
+      if (s1>=0 && s2 >= 0 && s3 >= 0 || s1<=0 && s2<=0 && s3<=0) {
          return intersection(true, p, this);
       }
       
