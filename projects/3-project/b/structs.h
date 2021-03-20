@@ -83,7 +83,11 @@ public:
          if (t0 > 0 || t1 > 0) {
             ret.hit = true;
 //            ret.point = pos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;  // RIP
-            ret.point = rayPos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
+//            ret.point = rayPos + fmin(fmax(displace,t0),fmax(displace,t1))*dir;
+            float t = fmin(t0,t1);
+            if (t < 0) t = fmax(t0,t1);
+//            ret.point = rayPos + fmin(t0,t1)*dir;
+            ret.point = rayPos + t*dir;
 
          }
       }

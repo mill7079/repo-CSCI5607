@@ -57,8 +57,14 @@ Color getColor(intersection i, int depth, vec3 initPos) {
    vec3 n = i.s->findNormal(point);
 //   if (dot((initPos - point).normalized(), n) > 0) n = -1 * n;
    
+   vec3 pS;
    // avoid hitting current sphere with shadow ray
-   vec3 pS = point + (displace * n);
+   if (dot((i.point-initPos).normalized(), n) > 0) {
+      pS = point - (displace * n);
+   } else {
+      pS = point + (displace * n);
+   }
+//   vec3 pS = point + (displace * n);
    
    // view direction
    vec3 v = (initPos - pS).normalized();
@@ -67,7 +73,8 @@ Color getColor(intersection i, int depth, vec3 initPos) {
    // r = d - 2*dot(d,n) * n
    // 𝑟=𝑑−2(𝑑⋅𝑛)𝑛
 //   vec3 d = point - initPos;
-   vec3 d = pS - initPos;
+//   vec3 d = pS - initPos;
+   vec3 d = (pS - initPos).normalized();
    vec3 r = d - 2*dot(d,n) * n;
 //   vec3 r = v - 2*dot(v,n) * n;
    
@@ -86,9 +93,52 @@ Color getColor(intersection i, int depth, vec3 initPos) {
    if (depth < maxDepth) {
       color = color + i.s->mat.specular * getColor(rayShapeIntersection(pS, r.normalized()), depth+1, pS);
       
-//      for (light* l : lights) {
-//         color = color + l->refract(i.s, pS, n);
+      // refraction
+
+      
+      // from slack....nope
+//      float dn = dot(d, n);
+//      float ne = 1, nt = i.s->mat.ior;
+//      if (dn < 0) {
+//         ne = nt;
+//         nt = 1;
+//         n = (-1 * n).normalized();
+//      } else if (dn > 0) {
+//         dn = -dn;
 //      }
+//
+//      float root = 1 - (pow(ne,2) * (1-pow(dn,2)) / pow(nt,2));
+//      root = sqrt(root);
+//
+//      if (root < 0) return color;
+//
+//      vec3 refract = (1/nt) * (ne * (d - dn*n)) - root * n;
+//      color = color + i.s->mat.transmissive * getColor(rayShapeIntersection(pS, refract.normalized()), depth+1, pS);
+      
+      
+      
+      
+      
+      // refraction???? apparently not
+//      vec3 norm = n;
+//      float eta = 1/i.s->mat.ior;
+//      float c1 = dot(d, n);
+//
+//      if (c1 < 0) {
+//         c1 = -c1;
+//      } else {
+//         norm = -1 * n;
+//         eta = i.s->mat.ior; // ior/1
+//      }
+//      float c2 = 1 - eta*eta * (1-c1*c1);
+//
+//      if (c2 < 0) return color;
+//
+//      vec3 refract = eta * d + (eta*c1 - sqrtf(c2)) * n;
+//
+//      color = color + i.s->mat.transmissive * getColor(rayShapeIntersection(pS, refract.normalized()), depth+1, pS);
+
+      
    }
    
    return color;
