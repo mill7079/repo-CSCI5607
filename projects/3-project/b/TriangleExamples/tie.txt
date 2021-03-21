@@ -1,0 +1,130 @@
+output_image: tie.png
+#camera_pos: 0 0 -10
+camera_pos: 15 0 -2
+camera_fwd: 5 0 -1
+camera_fov_ha: 35
+
+#point_light: 5 5 5 0 3 4
+#directional_light: 5 5 5 0 0 1
+
+#spot_light: 100 50 0 -39 18 -15 39 -18 20 85 90
+
+#test dir
+#directional_light: 10 5 0 39 -18 20
+
+# test pos
+#point_light: 10000 10000 10000 -37 18 -12
+#sphere: -39 18 -15 1
+
+point_light: 100 100 100 -5 0 -5
+point_light: 5 5 5 3 0 5
+
+background: 0 0 0.1
+max_depth: 5
+
+
+# body
+material: .1 .1 .1 .1 .1 .1 0 0 0 32 0 0 0 1
+sphere: 0 0 5 1
+
+# wings
+material: .2 .2 .2 .2 .2 .2 0 0 0 32 0 0 0 1
+max_vertices: 15
+max_normals: 15
+
+# center right wing
+vertex: 0 0 7
+
+# right wing
+vertex: 2 3.464 7
+vertex: 4 0 7
+vertex: 2 -3.464 7
+vertex: -2 -3.464 7
+vertex: -4 0 7
+vertex: -2 3.464 7
+
+triangle: 0 1 2
+triangle: 0 2 3
+triangle: 0 3 4
+triangle: 0 4 5
+triangle: 0 5 6
+triangle: 0 6 1
+
+# center left wing
+vertex: 0 0 3
+
+# left wing
+vertex: 2 3.464 3
+vertex: 4 0 3
+vertex: 2 -3.464 3
+vertex: -2 -3.464 3
+vertex: -4 0 3
+vertex: -2 3.464 3
+
+triangle: 7 8 9
+triangle: 7 9 10
+triangle: 7 10 11
+triangle: 7 11 12
+triangle: 7 12 13
+triangle: 7 13 8
+
+
+# planet
+material: .1 .02 0 .1 0.02 0 0 0 0 1 0 0 0 1
+sphere: 0 -15 -15 15
+
+# shot
+material: 0 15 0 0 15 0 .5 .5 .5 16 0 0 0 1
+point_light: 0 1 0 5.5 -.4 5
+point_light: 0 1 0 5.5 .4 5
+point_light: 0 1 0 5.45 0 4.85
+point_light: 0 1 0 6.4 0 5
+sphere: 5 0 5 0.08
+sphere: 5.05 0 5 0.08
+sphere: 5.1 0 5 0.08
+sphere: 5.15 0 5 0.08
+sphere: 5.2 0 5 0.08
+sphere: 5.25 0 5 0.08
+sphere: 5.3 0 5 0.08
+sphere: 5.35 0 5 0.08
+sphere: 5.4 0 5 0.08
+sphere: 5.45 0 5 0.08
+sphere: 5.5 0 5 0.08
+sphere: 5.55 0 5 0.08
+sphere: 5.6 0 5 0.08
+sphere: 5.65 0 5 0.08
+sphere: 5.7 0 5 0.08
+sphere: 5.75 0 5 0.08
+sphere: 5.8 0 5 0.08
+sphere: 5.85 0 5 0.08
+sphere: 5.9 0 5 0.08
+sphere: 5.95 0 5 0.08
+sphere: 6 0 5 0.08
+
+# shot2
+material: 0 15 0 0 15 0 .5 .5 .5 16 0 0 0 1
+point_light: 0 1 0 7.5 -.4 5
+point_light: 0 1 0 7.5 .4 5
+point_light: 0 1 0 7.5 0 4.85
+point_light: 0 1 0 8.4 0 5
+sphere: 7 -.5 5 0.08
+sphere: 7.05 -.5 5 0.08
+sphere: 7.1 -.5 5 0.08
+sphere: 7.15 -.5 5 0.08
+sphere: 7.2 -.5 5 0.08
+sphere: 7.25 -.5 5 0.08
+sphere: 7.3 -.5 5 0.08
+sphere: 7.35 -.5 5 0.08
+sphere: 7.4 -.5 5 0.08
+sphere: 7.45 -.5 5 0.08
+sphere: 7.5 -.5 5 0.08
+sphere: 7.55 -.5 5 0.08
+sphere: 7.6 -.5 5 0.08
+sphere: 7.65 -.5 5 0.08
+sphere: 7.7 -.5 5 0.08
+sphere: 7.75 -.5 5 0.08
+sphere: 7.8 -.5 5 0.08
+sphere: 7.85 -.5 5 0.08
+sphere: 7.9 -.5 5 0.08
+sphere: 7.95 -.5 5 0.08
+sphere: 8 -.5 5 0.08
