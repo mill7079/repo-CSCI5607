@@ -29,7 +29,15 @@ using namespace std;
 
 bool saveOutput = false;
 float timePast = 0;
+glm::vec3 color = glm::vec3(3 * (rand()/10000000000.0f),
+                           3 * (rand()/10000000000.0f),
+                           3 * (rand()/10000000000.0f));
 
+glm::vec3 camPos = glm::vec3(3.f, 0.f, 0.f);
+glm::vec3 camUp = glm::vec3(0.0f, 0.0f, 1.0f);
+glm::vec3 camLook = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
+float moveBy = 1.0f;
 // Shader sources
 //const GLchar* vertexSource =
 //  "#version 150 core\n"
@@ -70,12 +78,12 @@ float timePast = 0;
 //  "   outColor = vec4(diffuseC+ambC+specC, 1.0);"
 //  "}";
 
-// Shader sources
+// blinn-phong lighting, phong shading
 const GLchar* vertexSource =
   "#version 150 core\n"
   "in vec3 position;"
-  //"in vec3 inColor;"
-  "const vec3 inColor = vec3(0.f,0.7f,0.f);"
+  "uniform vec3 inColor;"
+//  "const vec3 inColor = vec3(0.f,0.7f,0.f);"
   "in vec3 inNormal;"
   "out vec3 Color;"
   "out vec3 normal;"
@@ -102,12 +110,100 @@ const GLchar* fragmentSource =
   "   vec3 diffuseC = Color*max(dot(lightDir,normal),0.0);"
   "   vec3 ambC = Color*ambient;"
   "   vec3 viewDir = normalize(-pos);" //We know the eye is at (0,0)!
-  "   vec3 reflectDir = reflect(viewDir,normal);"
-  "   float spec = max(dot(reflectDir,-lightDir),0.0);"
+  "   vec3 h = normalize(lightDir + viewDir);"
+ // "   vec3 reflectDir = reflect(viewDir,normal);"
+//  "   float spec = max(dot(reflectDir,-lightDir),0.0);"
+  "   float spec = max(dot(normal, h), 0.0);"
   "   if (dot(lightDir,normal) <= 0.0) spec = 0;"
   "   vec3 specC = vec3(1.0,1.0,1.0)*pow(spec,4);"
   "   outColor = vec4(diffuseC+ambC+specC, 1.0);"
   "}";
+
+// gouraud shading
+//const GLchar* vertexSource =
+//  "#version 150 core\n"
+//  "in vec3 position;"
+//  "uniform vec3 inColor;"
+//  "in vec3 inNormal;"
+//  "out vec4 Color;"
+//  "out vec3 normal;"
+//  "out vec3 pos;"
+//  "uniform mat4 model;"
+//  "uniform mat4 view;"
+//  "uniform mat4 proj;"
+//
+//   // from frag shader
+//  "const vec3 lightDir = normalize(vec3(1,1,1));"
+//  "const float ambient = .3;"
+//
+//  "void main() {"
+//  "   gl_Position = proj * view * model * vec4(position,1.0);"
+//  "   pos = (view * model * vec4(position,1.0)).xyz;"
+//  "   vec4 norm4 = transpose(inverse(view*model)) * vec4(inNormal,0.0);"  //Or Just: normal = normalize(view*model* vec4(inNormal,0.0)).xyz; //faster, but wrong if skew or non-uniform scale in model matrix
+//  "   normal = normalize(norm4.xyz);"
+//
+//   // from frag shader
+//  "   vec3 diffuseC = inColor*max(dot(lightDir,normal),0.0);"
+//  "   vec3 ambC = inColor*ambient;"
+//  "   vec3 viewDir = normalize(-pos);" //We know the eye is at (0,0)!
+//  "   vec3 h = normalize(lightDir + viewDir);"
+//  "   float spec = max(dot(normal, h), 0.0);"
+//  "   if (dot(lightDir,normal) <= 0.0) spec = 0;"
+//  "   vec3 specC = vec3(1.0,1.0,1.0)*pow(spec,4);"
+//  "   Color = vec4(diffuseC+ambC+specC, 1.0);"
+//  "}";
+//const GLchar* fragmentSource =
+//  "#version 150 core\n"
+//  "in vec4 Color;"
+//  "out vec4 outColor;"
+//  "void main() {"
+//  "   outColor = Color;"
+//  "}";
+
+// point light
+//const GLchar* vertexSource =
+//  "#version 150 core\n"
+//  "in vec3 position;"
+//  "uniform vec3 inColor;"
+//  "in vec3 inNormal;"
+//  "out vec3 Color;"
+//  "out vec3 normal;"
+//  "out vec3 pos;"
+//  "uniform mat4 model;"
+//  "uniform mat4 view;"
+//  "uniform mat4 proj;"
+//  "void main() {"
+//  "   Color = inColor;"
+//  "   gl_Position = proj * view * model * vec4(position,1.0);"
+//  "   pos = (view * model * vec4(position,1.0)).xyz;"
+//  "   vec4 norm4 = transpose(inverse(view*model)) * vec4(inNormal,0.0);"  //Or Just: normal = normalize(view*model* vec4(inNormal,0.0)).xyz; //faster, but wrong if skew or non-uniform scale in model matrix
+//  "   normal = normalize(norm4.xyz);"
+//  "}";
+//const GLchar* fragmentSource =
+//  "#version 150 core\n"
+//  "in vec3 Color;"
+//  "in vec3 normal;"
+//  "in vec3 pos;"
+//  "const vec3 lightPos = vec3(0.4,0,0);"
+////  "const vec3 lightPos = vec3(0,0.5,0);"
+////  "const vec3 lightPos = vec3(0,0,-0.1);"
+////  "const vec3 lightDir = normalize(vec3(1,1,1));"
+//  "out vec4 outColor;"
+//  "const float ambient = .3;"
+//  "void main() {"
+//  "   vec3 lightDir = lightPos - pos;"
+////  "   float lightDist = sqrt(pow(lightDir.x, 2) + pow(lightDir.y, 2) + pow(lightDir.z, 2));"
+//  "   float lightDist = length(lightDir);"
+//  "   lightDir = normalize(lightDir);"
+//  "   vec3 diffuseC = Color*max(dot(lightDir,normal),0.0);"
+//  "   vec3 ambC = Color*ambient;"
+//  "   vec3 viewDir = normalize(-pos);" //We know the eye is at (0,0)!
+//  "   vec3 h = normalize(lightDir + viewDir);"
+//  "   float spec = max(dot(normal, h), 0.0);"
+//  "   if (dot(lightDir,normal) <= 0.0) spec = 0;"
+//  "   vec3 specC = vec3(1.0,1.0,1.0)*pow(spec,64);"
+//  "   outColor = vec4(ambC+(diffuseC+specC)/pow(lightDist, 2), 1.0);"
+//  "}";
     
 bool fullscreen = false;
 int screen_width = 800;
@@ -154,8 +250,8 @@ int main(int argc, char *argv[]){
   }
 
   ifstream modelFile;
-//	modelFile.open("models/teapot.txt");
-   modelFile.open("models/triangle.txt");
+	modelFile.open("models/teapot.txt");
+//   modelFile.open("models/triangle.txt");
 	int numLines = 0;
 	modelFile >> numLines;
 	float* modelData = new float[numLines];
@@ -218,7 +314,8 @@ int main(int argc, char *argv[]){
 	GLuint vbo[1];
 	glGenBuffers(1, vbo);  //Create 1 buffer called vbo
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); //Set the vbo as the active array buffer (Only one buffer can be active at a time)
-	glBufferData(GL_ARRAY_BUFFER, numLines*sizeof(float), modelData, GL_STATIC_DRAW); //upload vertices to vbo
+//	glBufferData(GL_ARRAY_BUFFER, numLines*sizeof(float), modelData, GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, numLines*sizeof(float), modelData, GL_DYNAMIC_DRAW);//upload vertices to vbo
 	//GL_STATIC_DRAW means we won't change the geometry, GL_DYNAMIC_DRAW = geometry changes infrequently
 	//GL_STREAM_DRAW = geom. changes frequently.  This affects which types of GPU memory is used
 
@@ -229,9 +326,9 @@ int main(int argc, char *argv[]){
 	  //Binds to VBO current GL_ARRAY_BUFFER 
 	glEnableVertexAttribArray(posAttrib);
 	
-	//GLint colAttrib = glGetAttribLocation(shaderProgram, "inColor");
-	//glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-	//glEnableVertexAttribArray(colAttrib);
+//	GLint colAttrib = glGetAttribLocation(shaderProgram, "inColor");
+//	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+//	glEnableVertexAttribArray(colAttrib);
 	
 	GLint normAttrib = glGetAttribLocation(shaderProgram, "inNormal");
 	glVertexAttribPointer(normAttrib, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(5*sizeof(float)));
@@ -262,11 +359,37 @@ int main(int argc, char *argv[]){
 		  if (windowEvent.type == SDL_QUIT) quit = true; //Exit event loop
       //List of keycodes: https://wiki.libsdl.org/SDL_Keycode - You can catch many special keys
       //Scancode refers to a keyboard position, keycode refers to the letter (e.g., EU keyboards)
+       if (windowEvent.type == SDL_KEYDOWN) {
+          glm::vec3 moveCam;
+          if (windowEvent.key.keysym.sym == SDLK_a) {  // left
+             moveCam = -camRight;
+          } else if (windowEvent.key.keysym.sym == SDLK_d) {  // right
+             moveCam = camRight;
+          } else if (windowEvent.key.keysym.sym == SDLK_w) {  // up
+             moveCam = camUp;
+          } else if (windowEvent.key.keysym.sym == SDLK_s) {  // down
+             moveCam = -camUp;
+          } else if (windowEvent.key.keysym.sym == SDLK_q) {  // in
+             moveCam = normalize(camLook - camPos);
+          } else if (windowEvent.key.keysym.sym == SDLK_e) {  // out
+             moveCam = -normalize(camLook - camPos);
+          } else {
+             moveCam = glm::vec3(0,0,0);
+          }
+          camPos += moveCam * moveBy/60.0f;
+          camLook += moveCam * moveBy/60.0f;
+       }
       if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_ESCAPE) 
         quit = true; //Exit event loop
       if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_f) //If "f" is pressed
         fullscreen = !fullscreen;
-        SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0); //Set to full screen 
+        SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN : 0); //Set to full screen
+       if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_c) {
+          color = glm::vec3(3 * (rand()/10000000000.0f),
+                            3 * (rand()/10000000000.0f),
+                            3 * (rand()/10000000000.0f));
+          std::cout << color.x << std::endl;
+       }
     }
     
     // Clear the screen to default color
@@ -280,11 +403,17 @@ int main(int argc, char *argv[]){
     model = glm::rotate(model,timePast * 3.14f/4,glm::vec3(1.0f, 0.0f, 0.0f));
     GLint uniModel = glGetUniformLocation(shaderProgram, "model");
     glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+      
+      GLint incolor = glGetUniformLocation(shaderProgram, "inColor");
+      glUniform3fv(incolor, 1, glm::value_ptr(color));
     
     glm::mat4 view = glm::lookAt(
-      glm::vec3(3.f, 0.f, 0.f),  //Cam Position
-      glm::vec3(0.0f, 0.0f, 0.0f),  //Look at point
-      glm::vec3(0.0f, 0.0f, 1.0f)); //Up
+//      glm::vec3(3.f, 0.f, 0.f),  //Cam Position
+      camPos,
+//      glm::vec3(0.0f, 0.0f, 0.0f),  //Look at point
+      camLook,
+//      glm::vec3(0.0f, 0.0f, 1.0f)); //Up
+      camUp);
     GLint uniView = glGetUniformLocation(shaderProgram, "view");
     glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
     
