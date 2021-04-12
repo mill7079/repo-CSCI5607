@@ -23,33 +23,82 @@
 #include <string>
 #include <vector>
 
-// represents a grid cell on the map
-struct cell {
-   glm::vec3 center;
-   char status;
-   
-   cell(glm::vec3 c, char s) {
-      center = c;
-      status = s;
-   }
-};
-
-// miscellaneous variables
-float screenWidth = 800, screenHeight = 800;
-
-// map variables
+// map variables, have to be declared before cell struct. here comes the bullshit again
 int mapWidth, mapHeight, numWalls, numDoors;
-std::vector<std::vector<cell>> map;
 
 // model variables
 std::vector<float> vertices;
 std::vector<glm::vec2> modelBounds;  // vec2's are (offset, length) for each model
 std::string modelFiles[] = {"models/cube.txt", "models/teapot.txt"} ;  // indices correspond ^
+float zOffset = 0;
+
+// represents a grid cell on the map
+struct cell {
+   glm::vec3 center;
+   char status;
+
+   cell(glm::vec3 c, char s) {
+      center = c;
+      status = s;
+      
+      if (s == '0') {
+         center.z -= 1.f;
+      }
+   }
+   
+   void walls(int shader) {
+      GLint uniTexID = glGetUniformLocation(shader, "texID");
+      GLint uniModel = glGetUniformLocation(shader, "model");
+      
+      glm::mat4 model = glm::mat4(1);
+      bool wall = false;
+      if (center.x < 1) {  // add left wall
+         wall = true;
+         model = glm::translate(model, glm::vec3(center.x - 1, center.y, zOffset));
+      } else if (center.x > (mapWidth-1)) {  // add right wall
+         wall = true;
+         model = glm::translate(model, glm::vec3(center.x + 1, center.y, zOffset));
+      }
+      
+      if (wall) {
+         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+         glUniform1i(uniTexID, 1);
+         glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
+      }
+      
+      wall = false;
+      model = glm::mat4(1);
+      if (center.y < 1) {  // add lower wall
+         wall = true;
+         model = glm::translate(model, glm::vec3(center.x, center.y - 1, zOffset));
+      } else if (center.y > (mapHeight-1)) {  // add upper wall
+         wall = true;
+         model = glm::translate(model, glm::vec3(center.x, center.y + 1, zOffset));
+      }
+      
+      if (wall) {
+         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+         glUniform1i(uniTexID, 1);
+         glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
+      }
+   }
+};
+
+// 2D array of cells representing the map
+std::vector<std::vector<cell>> map;
+
+// miscellaneous variables
+float screenWidth = 800, screenHeight = 800;
 
 // camera variables: position, look at point, and up vector
-glm::vec3 camPos = glm::vec3(3.f, 0.f, 0.f);
-glm::vec3 camLook = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 camUp = glm::vec3(0.0f, 0.0f, 1.0f);
+//glm::vec3 camPos = glm::vec3(3.f, 0.f, 10.f);
+glm::vec3 camPos = glm::vec3(2.5f, 2.5f, 10.f);
+//glm::vec3 camLook = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 camLook = glm::vec3(2.5f, 2.5f, 9.f);
+//glm::vec3 camUp = glm::vec3(0.0f, 0.0f, 1.0f);
+glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
+float moveBy = 1.0f;
 
 
 // reads a map file into the map structure for later handling
@@ -65,22 +114,28 @@ void readMapFile() {
    std::string row;
    int i, j;
    for (i = 0; i < mapHeight; i++) {
-      map.push_back(std::vector<cell>());  // initialize row
+      map.push_back(std::vector<cell>());  // initialize rows
+   }
+//   for (i = 0; i < mapHeight; i++) {
+   for (i = mapHeight - 1; i >= 0; i--) {
       mapFile >> row;
       for (j = 0; j < mapWidth; j++) {
-         glm::vec3 center = glm::vec3(i+0.5, j+0.5, 0.0);
+         glm::vec3 center = glm::vec3(j+0.5, i+0.5, zOffset);
+//         glm::vec3 center = glm::vec3(i+0.5, zOffset, j+0.5);
          map[i].push_back(cell(center, row[j]));
+//         std::cout << center.x << "," << center.y << " ";
       }
+//      std::cout << std::endl;
    }
    
    // check file read
-//   std::cout << "map: " << std::endl;
-//   for (i = 0; i < map.size(); i++) {
-//      for (j = 0; j < map[i].size(); j++) {
-//         std::cout << map[i][j].status;
-//      }
-//      std::cout << std::endl;
-//   }
+   std::cout << "map: " << std::endl;
+   for (i = 0; i < map.size(); i++) {
+      for (j = 0; j < map[i].size(); j++) {
+         std::cout << map[i][j].status;
+      }
+      std::cout << std::endl;
+   }
    
    mapFile.close();
 }
@@ -110,26 +165,73 @@ void loadModels() {
 //   }
 }
 
-// draw each model in level; for now, just drawing a teapot to make sure shit works
+// draw each model in level
 void draw(int shader) {
    // set object color - maybe not needed if texturing only
    GLint color = glGetUniformLocation(shader, "inColor");
    glm::vec3 colVec(1,0,0);
    glUniform3fv(color, 1, glm::value_ptr(colVec));
    
-   // pass model matrix to shader
-   glm::mat4 model = glm::mat4(1);
-   model = glm::translate(model,glm::vec3(-2,-1,-.4));
-   GLint uniModel = glGetUniformLocation(shader, "model");
-   glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
-   
-   // texture
    GLint uniTexID = glGetUniformLocation(shader, "texID");
-   glUniform1i(uniTexID, -1);
+   GLint uniModel = glGetUniformLocation(shader, "model");
    
-   // draw model
-   glDrawArrays(GL_TRIANGLES, modelBounds[1].x, modelBounds[1].y);
-//   std::cout << modelBounds[0].x << " " << modelBounds[0].y << std::endl;
+   // draw map
+   glm::mat4 model;
+   for (std::vector<cell> row : map) {
+      for (cell c : row) {
+         model = glm::mat4(1);
+         model = glm::translate(model, c.center);
+         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+         
+         int tex;
+         switch (c.status) {
+            case 'W':
+               tex = 1;
+               break;
+            case '0':
+               tex = 0;
+               break;
+            case 'S':
+               tex = -1;
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,1,0)));
+               break;
+            case 'G':
+               tex = -1;
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
+               break;
+            default:
+               tex = -1;
+               break;
+         }
+         glUniform1i(uniTexID, tex);
+         glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
+         
+         c.walls(shader);
+      }
+   }
+   
+//   for (int i = -1; i <= mapHeight; i++) {
+//      for (int j = -1; j <= mapWidth; j++) {
+//         if (i == -1 || j == -1 || i == mapHeight || j == mapWidth) {
+//            model = glm::mat4(1);
+//            model = glm::translate(model, glm::vec3(i, j, zOffset));
+//         }
+//      }
+//   }
+   
+//   // pass model matrix to shader
+//   glm::mat4 model = glm::mat4(1);
+//   model = glm::translate(model,glm::vec3(-2,-1,-.4));
+////   GLint uniModel = glGetUniformLocation(shader, "model");
+//   glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+//
+//   // texture
+////   GLint uniTexID = glGetUniformLocation(shader, "texID");
+//   glUniform1i(uniTexID, -1);
+//
+//   // draw model
+//   glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
+////   std::cout << modelBounds[0].x << " " << modelBounds[0].y << std::endl;
 }
 
 GLuint InitShader(const char* vShaderFileName, const char* fShaderFileName);
@@ -277,6 +379,27 @@ int main(int argc, char *argv[]){
          if (windowEvent.type == SDL_QUIT) quit = true;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_ESCAPE)
             quit = true;
+         
+         if (windowEvent.type == SDL_KEYDOWN) {
+            glm::vec3 moveCam;
+            if (windowEvent.key.keysym.sym == SDLK_a) {  // left
+               moveCam = -camRight;
+            } else if (windowEvent.key.keysym.sym == SDLK_d) {  // right
+               moveCam = camRight;
+            } else if (windowEvent.key.keysym.sym == SDLK_w) {  // up
+               moveCam = camUp;
+            } else if (windowEvent.key.keysym.sym == SDLK_s) {  // down
+               moveCam = -camUp;
+            } else if (windowEvent.key.keysym.sym == SDLK_q) {  // in
+               moveCam = normalize(camLook - camPos);
+            } else if (windowEvent.key.keysym.sym == SDLK_e) {  // out
+               moveCam = -normalize(camLook - camPos);
+            } else {
+               moveCam = glm::vec3(0,0,0);
+            }
+            camPos += moveCam * moveBy/60.0f;
+            camLook += moveCam * moveBy/60.0f;
+         }
       }
       
       // Clear screen
@@ -293,13 +416,13 @@ int main(int argc, char *argv[]){
                                    camUp);  // Up
       glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
 
-      glm::mat4 proj = glm::perspective(3.14f/4, screenWidth / (float) screenHeight, 1.0f, 10.0f);  // FOV, aspect, near, far
+      glm::mat4 proj = glm::perspective(3.14f/4, screenWidth / (float) screenHeight, 1.0f, 30.0f);  // FOV, aspect, near, far; far used to be 10.0f but that seemed short
       glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
       
       
       
       
-      // Do....something with textures - make active? set up so geometry can find them? TODO: this
+      // Do....something with textures - make active? set up so geometry can find them? TODO: is there a way to make this shit an array?
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, tex0);
       glUniform1i(glGetUniformLocation(shader, "tex0"), 0);
