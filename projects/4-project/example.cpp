@@ -161,7 +161,7 @@ int main(int argc, char *argv[]){
     SDL_FreeSurface(surface1);
 	//// End Allocate Texture ///////
 	
-	//Build a Vertex Array Object (VAO) to store mapping of shader attributse to VBO
+	// Build a Vertex Array Object (VAO) to store mapping of shader attributes to VBO
 	GLuint vao;
 	glGenVertexArrays(1, &vao); //Create a VAO
 	glBindVertexArray(vao); //Bind the above created VAO to the current context
@@ -289,8 +289,8 @@ void drawGeometry(int shaderProgram, int model1_start, int model1_numVerts, int 
 	GLint uniColor = glGetUniformLocation(shaderProgram, "inColor");
 	glm::vec3 colVec(colR,colG,colB);
 	glUniform3fv(uniColor, 1, glm::value_ptr(colVec));
-      
-  GLint uniTexID = glGetUniformLocation(shaderProgram, "texID");
+   
+   GLint uniTexID = glGetUniformLocation(shaderProgram, "texID");
 	  
 	//************
 	//Draw model #1 the first time
