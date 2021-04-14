@@ -16,6 +16,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glm/gtx/rotate_vector.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -31,22 +32,40 @@ std::vector<float> vertices;
 std::vector<glm::vec2> modelBounds;  // vec2's are (offset, length) for each model
 std::string modelFiles[] = {"models/cube.txt", "models/teapot.txt"} ;  // indices correspond ^
 float zOffset = 0;
+float lookAngle = 0.f, angleSpeed = 1.8f;
 
 // represents a grid cell on the map
 struct cell {
    glm::vec3 center;
    char status;
+   
+   cell() {};
 
    cell(glm::vec3 c, char s) {
       center = c;
       status = s;
       
-      if (s == '0') {
-         center.z -= 1.f;
+      switch (s) {
+         case 'S':
+         case '0':
+            center.z -= 1.f;
+            break;
+//         case 'S':
+//            playerPos = this;
+//            break;
+//         case 'G':
+//            endPos = this;
+//            break;
+         default:
+            break;
       }
+      
+//      if (s == '0') {
+//         center.z -= 1.f;
+//      }
    }
    
-   void walls(int shader) {
+   void walls(int shader) {  // there's probably a way to condense this but we'll get there
       GLint uniTexID = glGetUniformLocation(shader, "texID");
       GLint uniModel = glGetUniformLocation(shader, "model");
       
@@ -89,6 +108,7 @@ std::vector<std::vector<cell>> map;
 
 // miscellaneous variables
 float screenWidth = 800, screenHeight = 800;
+cell playerPos, endPos;
 
 // camera variables: position, look at point, and up vector
 //glm::vec3 camPos = glm::vec3(3.f, 0.f, 10.f);
@@ -99,6 +119,7 @@ glm::vec3 camLook = glm::vec3(2.5f, 2.5f, 9.f);
 glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
 float moveBy = 1.0f;
+float rotateSpeed = 100000.0f;
 
 
 // reads a map file into the map structure for later handling
@@ -122,7 +143,25 @@ void readMapFile() {
       for (j = 0; j < mapWidth; j++) {
          glm::vec3 center = glm::vec3(j+0.5, i+0.5, zOffset);
 //         glm::vec3 center = glm::vec3(i+0.5, zOffset, j+0.5);
-         map[i].push_back(cell(center, row[j]));
+         cell c = cell(center, row[j]);
+         map[i].push_back(c);
+         
+         switch (c.status) {
+            case 'S':
+               playerPos = c;
+               camPos = c.center;
+               camPos.z += 1.f;
+               camUp = glm::vec3(0.f, 0.f, 1.f);
+               camLook = c.center;
+               camLook.x += 1.f;
+               camLook.z += 1.f;
+               break;
+            case 'G':
+               endPos = c;
+               break;
+            default:
+               break;
+         }
 //         std::cout << center.x << "," << center.y << " ";
       }
 //      std::cout << std::endl;
@@ -138,6 +177,8 @@ void readMapFile() {
    }
    
    mapFile.close();
+   
+   std::cout << playerPos.center.x << " " << playerPos.center.y << std::endl;
 }
 
 // loads models specified in modelFiles array
@@ -188,13 +229,14 @@ void draw(int shader) {
             case 'W':
                tex = 1;
                break;
+            case 'S':
             case '0':
                tex = 0;
                break;
-            case 'S':
-               tex = -1;
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,1,0)));
-               break;
+//            case 'S':
+//               tex = -1;
+//               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,1,0)));
+//               break;
             case 'G':
                tex = -1;
                glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
@@ -206,33 +248,13 @@ void draw(int shader) {
          glUniform1i(uniTexID, tex);
          glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
          
+         // draw outer walls
          c.walls(shader);
       }
    }
-   
-//   for (int i = -1; i <= mapHeight; i++) {
-//      for (int j = -1; j <= mapWidth; j++) {
-//         if (i == -1 || j == -1 || i == mapHeight || j == mapWidth) {
-//            model = glm::mat4(1);
-//            model = glm::translate(model, glm::vec3(i, j, zOffset));
-//         }
-//      }
-//   }
-   
-//   // pass model matrix to shader
-//   glm::mat4 model = glm::mat4(1);
-//   model = glm::translate(model,glm::vec3(-2,-1,-.4));
-////   GLint uniModel = glGetUniformLocation(shader, "model");
-//   glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
-//
-//   // texture
-////   GLint uniTexID = glGetUniformLocation(shader, "texID");
-//   glUniform1i(uniTexID, -1);
-//
-//   // draw model
-//   glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
-////   std::cout << modelBounds[0].x << " " << modelBounds[0].y << std::endl;
 }
+
+
 
 GLuint InitShader(const char* vShaderFileName, const char* fShaderFileName);
 
@@ -375,13 +397,15 @@ int main(int argc, char *argv[]){
    bool quit = false;
    while (!quit){
       // Handle all window events (e.g. key presses)
+      float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
+//      lookAngle = 0.0f;
       while (SDL_PollEvent(&windowEvent)){
          if (windowEvent.type == SDL_QUIT) quit = true;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_ESCAPE)
             quit = true;
          
          if (windowEvent.type == SDL_KEYDOWN) {
-            glm::vec3 moveCam;
+            glm::vec3 moveCam = glm::vec3(0,0,0);
             if (windowEvent.key.keysym.sym == SDLK_a) {  // left
                moveCam = -camRight;
             } else if (windowEvent.key.keysym.sym == SDLK_d) {  // right
@@ -390,16 +414,47 @@ int main(int argc, char *argv[]){
                moveCam = camUp;
             } else if (windowEvent.key.keysym.sym == SDLK_s) {  // down
                moveCam = -camUp;
-            } else if (windowEvent.key.keysym.sym == SDLK_q) {  // in
+            } else if (windowEvent.key.keysym.sym == SDLK_UP) {  // in
                moveCam = normalize(camLook - camPos);
-            } else if (windowEvent.key.keysym.sym == SDLK_e) {  // out
+            } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // out
                moveCam = -normalize(camLook - camPos);
+            } else if (windowEvent.key.keysym.sym == SDLK_LEFT) {  // rotate left
+//               camLook = glm::rotate(camLook, 3.1415f/120.f, camUp);
+//               camLook = camLook - camPos;
+//               camLook = glm::rotate(camLook, 3.1415f/240.f, glm::normalize(camUp));
+//               camLook = camLook + camPos;
+               w += angleSpeed;
+            } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // rotate right
+//               camLook = camLook - camPos;
+//               camLook = glm::rotate(camLook, -3.1415f/240.f, camUp);
+//               camLook = camLook + camPos;  // sheesh
+               w -= angleSpeed;
             } else {
                moveCam = glm::vec3(0,0,0);
             }
+            
+            lookAngle += w * 1/60.0f;
+            
+            camLook.x = camPos.x + std::cos(lookAngle);
+            camLook.y = camPos.y + std::sin(lookAngle);
+            
+            
             camPos += moveCam * moveBy/60.0f;
             camLook += moveCam * moveBy/60.0f;
+            
+            
+//            camLook.x = camPos.x + std::sin(lookAngle);
+//            camLook.y = camPos.y + std::cos(lookAngle);
+//            glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
          }
+         
+//         if (windowEvent.type == SDL_MOUSEMOTION && windowEvent.button.button == SDL_BUTTON_LEFT) {
+////            moveX += windowEvent.motion.x;
+//            float moveX = windowEvent.motion.x - prevX;
+//            prevX = windowEvent.motion.x;
+//            std::cout << moveX << std::endl;
+//            camLook = glm::rotate(camLook, moveX/rotateSpeed, camUp);
+//        }
       }
       
       // Clear screen
@@ -410,13 +465,15 @@ int main(int argc, char *argv[]){
       glUseProgram(shader);
       
       // Adjust view and projection matrices (might not be needed for user-controlled movement) (but I think SOMETHING still needs to be passed in)
-      // TODO: move lookAt params out to variables
+//      lookAngle = std::atan((camLook.y - camPos.y)/(camLook.x - camPos.x));
+//      camLook = camPos + std::cos(lookAngle);
+//      camLook = camPos + std::sin(lookAngle);
       glm::mat4 view = glm::lookAt(camPos,  // Cam Position
                                    camLook,   // Look at point
                                    camUp);  // Up
       glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
 
-      glm::mat4 proj = glm::perspective(3.14f/4, screenWidth / (float) screenHeight, 1.0f, 30.0f);  // FOV, aspect, near, far; far used to be 10.0f but that seemed short
+      glm::mat4 proj = glm::perspective(3.14f/4, screenWidth / (float) screenHeight, 0.1f, 30.0f);  // FOV, aspect, near, far; far used to be 10.0f but that seemed short
       glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
       
       
