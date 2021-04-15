@@ -259,6 +259,10 @@ void draw(int shader) {
                glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
                break;
             case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
                tex = 2;
                break;
             default:
@@ -372,9 +376,9 @@ void moveCell(glm::vec3 moveCam) {
    }
    
    if (isKey(status)) {
-      std::cout << "status: " << status << " -97: " << (status-97) << std::endl;
+//      std::cout << "status: " << status << " -97: " << (status-97) << std::endl;
       keys[(status - 97)] = true;
-      std::cout << keys[0] << keys[1] << keys[2] << keys[3] << keys[4] << std::endl;
+//      std::cout << keys[0] << keys[1] << keys[2] << keys[3] << keys[4] << std::endl;
    }
 }
 
