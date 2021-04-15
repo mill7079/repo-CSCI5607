@@ -35,6 +35,8 @@ float zOffset = 0;
 float lookAngle = 0.f, angleSpeed = 1.8f;
 float camRadius = 0.3f;
 
+bool keys[5] = {false, false, false, false, false};
+
 // represents a grid cell on the map
 struct cell {
    glm::vec3 center;
@@ -47,16 +49,15 @@ struct cell {
       status = s;
       
       switch (s) {
+         case 'a':
+         case 'b':
+         case 'c':
+         case 'd':
+         case 'e':
          case 'S':
          case '0':
             center.z -= 1.f;
             break;
-//         case 'S':
-//            playerPos = this;
-//            break;
-//         case 'G':
-//            endPos = this;
-//            break;
          default:
             break;
       }
@@ -158,7 +159,6 @@ void readMapFile() {
          
          switch (c.status) {
             case 'S':
-//               playerPos = c;
                cur = glm::vec2(i, j);
                camPos = c.center;
                camPos.z += 1.f;
@@ -168,7 +168,6 @@ void readMapFile() {
                camLook.z += 1.f;
                break;
             case 'G':
-//               end = c;
                end = glm::vec2(i, j);
                break;
             default:
@@ -271,19 +270,51 @@ void draw(int shader) {
          
          // draw outer walls
          c.walls(shader);
+         
+         // draw key models
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(c.center.x, c.center.y, c.center.z + 0.8f));
+         model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f));
+         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+         tex = -1;
+         bool key = true;
+         switch (c.status) {
+            case 'a':
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
+               break;
+            case 'b':
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,1,0)));
+               break;
+            case 'c':
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,0,1)));
+               break;
+            case 'd':
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,1)));
+               break;
+            case 'e':
+               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,1,0)));
+               break;
+            default:
+               key = false;
+               break;
+         }
+         
+         if (key) {
+            glUniform1i(uniTexID, tex);
+            glDrawArrays(GL_TRIANGLES, modelBounds[1].x, modelBounds[1].y);
+         }
       }
    }
 }
 
-//glm::vec2 moveCell(glm::vec3 moveCam) {
+bool isKey(char c) {
+   return c >= 95 && c <= 101;
+}
+
+// Attempt to move camera, handling possible collisions and updating the current cell
 void moveCell(glm::vec3 moveCam) {
-//   glm::vec3 newPos = camPos + moveCam * (moveBy/60.0f);
    glm::vec3 newPos = camPos + moveCam * moveBy;
-//   float dist = glm::length(map[cur.x][cur.y].center - camPos);
-//   float dist = glm::length(map[cur.x][cur.y].center - newPos);
-//   std::cout << "DISTANCE" << std::endl;
    float dist = asdf(map[cur.x][cur.y].center, newPos);
-//   std::cout << "DISTANCE2" << std::endl;
    int i, j, rNew, cNew;
    float newDist, minDist = dist;
    glm::vec2 newCell = cur;
@@ -310,7 +341,7 @@ void moveCell(glm::vec3 moveCam) {
    
    // don't move into wall if there's a collision
    char status = map[newCell.x][newCell.y].status;
-   if (status != 'W' && (status < 65 || status > 69)) {
+   if (status != 'W' && (keys[status-65] || (status < 65 || status > 69))) {
       camPos = newPos;
       camLook += moveCam * moveBy;
    
@@ -331,10 +362,8 @@ void moveCell(glm::vec3 moveCam) {
       
       if (glm::dot(movement, axis) < 0) axis *= -1.f;
       
-      std::cout << "axis: " << axis.x << " " << axis.y << std::endl;
+//      std::cout << "axis: " << axis.x << " " << axis.y << std::endl;
       float m = glm::dot(movement, axis);
-      
-//      std::cout << m.x << " " << m.y << " " << m.z << std::endl;
       
       camPos += m*axis;
       camLook += m*axis;
@@ -342,61 +371,14 @@ void moveCell(glm::vec3 moveCam) {
       moveCell(glm::vec3(0,0,0));
    }
    
+   if (isKey(status)) {
+      std::cout << "status: " << status << " -97: " << (status-97) << std::endl;
+      keys[(status - 97)] = true;
+      std::cout << keys[0] << keys[1] << keys[2] << keys[3] << keys[4] << std::endl;
+   }
 }
 
-//glm::vec2 updateCell() {
-////   float dist = playerPos.center - camPos;
-//   float dist = glm::length(map[cur.x][cur.y].center - camPos);
-//   int row = cur.x, col = cur.y;
-//   bool move = false;
-//   glm::vec2 ret = cur;
-//
-//   if (row - 1 >= 0 &&
-//       glm::length(map[row-1][col].center - camPos) < dist ) {  // upper neighbor
-////      cur = glm::vec2(row - 1, col);
-//      ret = glm::vec2(row - 1, col);
-//      move = true;
-//   } else if (row + 1 < map.size() &&
-//              glm::length(map[row+1][col].center - camPos) < dist) {  // lower neighbor
-//      ret = glm::vec2(row+1, col);
-//      move = true;
-//   } else if (col - 1 >= 0 &&
-//              glm::length(map[row][col-1].center - camPos) < dist) {  // left neighbor
-//      ret = glm::vec2(row, col-1);
-//      move = true;
-//   } else if (col + 1 < map[row].size() &&
-//              glm::length(map[row][col+1].center - camPos) < dist) {  // right neighbor
-//      ret = glm::vec2(row, col+1);
-//      move = true;
-//   }
-//
-//   if (move) {
-//      std::cout << "old cell: " << cur.x << " " << cur.y << std::endl;
-//      std::cout << "new cell: " << ret.x << " " << ret.y << std::endl;
-//   }
-//
-//   return ret;
-//}
-//
-//bool checkPos(glm::vec3 moveCam) {
-//   camPos += moveCam * moveBy/60.0f;
-//   camLook += moveCam * moveBy/60.0f;
-//   glm::vec2 newPos = updateCell();
-//
-//   if (newPos.x != cur.x || newPos.y != cur.y) {  // if cell changed
-////      if (map[newPos.x][newPos.y].status == 'W') {  // TODO: add doors
-////         camPos -= moveCam * moveBy/60.0f;
-////         camLook -= moveCam * moveBy/60.0f;
-////         std::cout << "collision with: " << newPos.x << newPos.y << std::endl;
-////         return false;
-////      }
-//
-//      cur = newPos;
-//   }
-//
-//   return true;
-//}
-
+// Prints a variety of location information. Used for help with debugging collisions
 void debug() {
    std::cout << "current cell: " << cur.x << " " << cur.y << std::endl;
    std::cout << "current cell center: " << map[cur.x][cur.y].center.x << " " << map[cur.x][cur.y].center.y << std::endl;
