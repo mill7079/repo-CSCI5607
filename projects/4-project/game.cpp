@@ -33,6 +33,7 @@ std::vector<glm::vec2> modelBounds;  // vec2's are (offset, length) for each mod
 std::string modelFiles[] = {"models/cube.txt", "models/teapot.txt"} ;  // indices correspond ^
 float zOffset = 0;
 float lookAngle = 0.f, angleSpeed = 1.8f;
+float camRadius = 0.3f;
 
 // represents a grid cell on the map
 struct cell {
@@ -107,8 +108,9 @@ struct cell {
 std::vector<std::vector<cell>> map;
 
 // miscellaneous variables
-float screenWidth = 800, screenHeight = 800;
-cell playerPos, endPos;
+float screenWidth = 850, screenHeight = 850;
+//cell start, end;
+glm::vec2 cur, end;
 
 // camera variables: position, look at point, and up vector
 //glm::vec3 camPos = glm::vec3(3.f, 0.f, 10.f);
@@ -118,14 +120,22 @@ glm::vec3 camLook = glm::vec3(2.5f, 2.5f, 9.f);
 //glm::vec3 camUp = glm::vec3(0.0f, 0.0f, 1.0f);
 glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
-float moveBy = 1.0f;
+float moveBy = 2.0f/60.0f;
 float rotateSpeed = 100000.0f;
+
+// this is a distance function but if i call it distance things die so asdf it is
+float asdf(glm::vec2 a, glm::vec2 b) {
+//   std::cout << ";AOSKJDFA;LSDKJFA;SDJFALSDKJF;ASLDJF" << std::endl;
+   float d = std::sqrt(pow(b.x - a.x, 2) + pow(b.y - a.y, 2));
+//   std::cout << "distance: " << d << std::endl;
+   return d;
+}
 
 
 // reads a map file into the map structure for later handling
 void readMapFile() {
    std::ifstream mapFile;
-   mapFile.open("maps/map1.txt");
+   mapFile.open("maps/map2.txt");
    
    // read parameters
    mapFile >> mapWidth;
@@ -148,7 +158,8 @@ void readMapFile() {
          
          switch (c.status) {
             case 'S':
-               playerPos = c;
+//               playerPos = c;
+               cur = glm::vec2(i, j);
                camPos = c.center;
                camPos.z += 1.f;
                camUp = glm::vec3(0.f, 0.f, 1.f);
@@ -157,7 +168,8 @@ void readMapFile() {
                camLook.z += 1.f;
                break;
             case 'G':
-               endPos = c;
+//               end = c;
+               end = glm::vec2(i, j);
                break;
             default:
                break;
@@ -169,7 +181,8 @@ void readMapFile() {
    
    // check file read
    std::cout << "map: " << std::endl;
-   for (i = 0; i < map.size(); i++) {
+//   for (i = 0; i < map.size(); i++) {
+   for (i = map.size() - 1; i >= 0; i--) {
       for (j = 0; j < map[i].size(); j++) {
          std::cout << map[i][j].status;
       }
@@ -178,7 +191,7 @@ void readMapFile() {
    
    mapFile.close();
    
-   std::cout << playerPos.center.x << " " << playerPos.center.y << std::endl;
+   std::cout << cur.x << " " << cur.y << std::endl;
 }
 
 // loads models specified in modelFiles array
@@ -229,6 +242,11 @@ void draw(int shader) {
             case 'W':
                tex = 1;
                break;
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
             case 'S':
             case '0':
                tex = 0;
@@ -240,6 +258,9 @@ void draw(int shader) {
             case 'G':
                tex = -1;
                glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
+               break;
+            case 'A':
+               tex = 2;
                break;
             default:
                tex = -1;
@@ -254,7 +275,150 @@ void draw(int shader) {
    }
 }
 
+//glm::vec2 moveCell(glm::vec3 moveCam) {
+void moveCell(glm::vec3 moveCam) {
+//   glm::vec3 newPos = camPos + moveCam * (moveBy/60.0f);
+   glm::vec3 newPos = camPos + moveCam * moveBy;
+//   float dist = glm::length(map[cur.x][cur.y].center - camPos);
+//   float dist = glm::length(map[cur.x][cur.y].center - newPos);
+//   std::cout << "DISTANCE" << std::endl;
+   float dist = asdf(map[cur.x][cur.y].center, newPos);
+//   std::cout << "DISTANCE2" << std::endl;
+   int i, j, rNew, cNew;
+   float newDist, minDist = dist;
+   glm::vec2 newCell = cur;
+   
+   // check all neighboring cells for distance
+   for (i = -1; i <= 1; i++) {
+      for (j = -1; j <= 1; j++) {
+         if (i == 0 && j == 0) continue;
+         
+         rNew = cur.x + i, cNew = cur.y + j;
+         if (rNew < map.size() && rNew >= 0 &&
+             cNew < map[rNew].size() && cNew >= 0) {
+//            newDist = asdf(map[rNew][cNew].center, newPos);
+            newDist = asdf(map[rNew][cNew].center, newPos) - camRadius;
+            if (newDist < minDist) {
+               minDist = newDist;
+               newCell = glm::vec2(rNew, cNew);
+            }
+         }
+      }
+   }
+   
+   if (newPos.x - camRadius < 0 || newPos.x + camRadius >= mapWidth || newPos.y - camRadius < 0 || newPos.y + camRadius >= mapHeight) return;
+   
+   // don't move into wall if there's a collision
+   char status = map[newCell.x][newCell.y].status;
+   if (status != 'W' && (status < 65 || status > 69)) {
+      camPos = newPos;
+      camLook += moveCam * moveBy;
+   
+//      if (newCell != cur) {
+//         std::cout << "old cell: " << cur.x << " " << cur.y << std::endl;
+//         std::cout << "new cell: " << newCell.x << " " << newCell.y << std::endl;
+//
+//      }
+      cur = newCell;
+   } else {  // move along wall
+      glm::vec3 movement = moveCam * moveBy, axis;
+      if (glm::length(movement) == 0) return;
+      if (newCell.x != cur.x) {  // vertical wall; wall off to side
+         axis = glm::vec3(1.f, 0.f, 0.f);
+      } else if (newCell.y != cur.y) {  // horizontal wall; wall above or below
+         axis = glm::vec3(0.f, 1.f, 0.f);
+      }
+      
+      if (glm::dot(movement, axis) < 0) axis *= -1.f;
+      
+      std::cout << "axis: " << axis.x << " " << axis.y << std::endl;
+      float m = glm::dot(movement, axis);
+      
+//      std::cout << m.x << " " << m.y << " " << m.z << std::endl;
+      
+      camPos += m*axis;
+      camLook += m*axis;
+      
+      moveCell(glm::vec3(0,0,0));
+   }
+   
+}
 
+//glm::vec2 updateCell() {
+////   float dist = playerPos.center - camPos;
+//   float dist = glm::length(map[cur.x][cur.y].center - camPos);
+//   int row = cur.x, col = cur.y;
+//   bool move = false;
+//   glm::vec2 ret = cur;
+//
+//   if (row - 1 >= 0 &&
+//       glm::length(map[row-1][col].center - camPos) < dist ) {  // upper neighbor
+////      cur = glm::vec2(row - 1, col);
+//      ret = glm::vec2(row - 1, col);
+//      move = true;
+//   } else if (row + 1 < map.size() &&
+//              glm::length(map[row+1][col].center - camPos) < dist) {  // lower neighbor
+//      ret = glm::vec2(row+1, col);
+//      move = true;
+//   } else if (col - 1 >= 0 &&
+//              glm::length(map[row][col-1].center - camPos) < dist) {  // left neighbor
+//      ret = glm::vec2(row, col-1);
+//      move = true;
+//   } else if (col + 1 < map[row].size() &&
+//              glm::length(map[row][col+1].center - camPos) < dist) {  // right neighbor
+//      ret = glm::vec2(row, col+1);
+//      move = true;
+//   }
+//
+//   if (move) {
+//      std::cout << "old cell: " << cur.x << " " << cur.y << std::endl;
+//      std::cout << "new cell: " << ret.x << " " << ret.y << std::endl;
+//   }
+//
+//   return ret;
+//}
+//
+//bool checkPos(glm::vec3 moveCam) {
+//   camPos += moveCam * moveBy/60.0f;
+//   camLook += moveCam * moveBy/60.0f;
+//   glm::vec2 newPos = updateCell();
+//
+//   if (newPos.x != cur.x || newPos.y != cur.y) {  // if cell changed
+////      if (map[newPos.x][newPos.y].status == 'W') {  // TODO: add doors
+////         camPos -= moveCam * moveBy/60.0f;
+////         camLook -= moveCam * moveBy/60.0f;
+////         std::cout << "collision with: " << newPos.x << newPos.y << std::endl;
+////         return false;
+////      }
+//
+//      cur = newPos;
+//   }
+//
+//   return true;
+//}
+
+void debug() {
+   std::cout << "current cell: " << cur.x << " " << cur.y << std::endl;
+   std::cout << "current cell center: " << map[cur.x][cur.y].center.x << " " << map[cur.x][cur.y].center.y << std::endl;
+   std::cout << "current camPos: " << camPos.x << " " << camPos.y << std::endl;
+   std::cout << "distances:" << std::endl;
+   for (int i = map.size() - 1; i >= 0; i--) {
+      for (int j = 0; j < map[i].size(); j++) {
+//         printf("%.2f ", glm::length(map[i][j].center-camPos));
+         printf("%.2f ", asdf(map[i][j].center, camPos));
+      }
+      std::cout << std::endl;
+   }
+   
+   std::cout << "centers: " << std::endl;
+   for (int i = map.size() - 1; i >= 0; i--) {
+      for (int j = 0; j < map[i].size(); j++) {
+         glm::vec2 c = map[i][j].center;
+         std::cout << c.x << "," << c.y << "  ";
+      }
+      std::cout << std::endl;
+   }
+}
 
 GLuint InitShader(const char* vShaderFileName, const char* fShaderFileName);
 
@@ -268,7 +432,7 @@ int main(int argc, char *argv[]){
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
    // Create a window (offsetx, offsety, width, height, flags)
-   SDL_Window* window = SDL_CreateWindow("My OpenGL Program", 100, 100, screenWidth, screenHeight, SDL_WINDOW_OPENGL);
+   SDL_Window* window = SDL_CreateWindow("Maze Game", 0, 0, screenWidth, screenHeight, SDL_WINDOW_OPENGL);
 
    //Create a context to draw in
    SDL_GLContext context = SDL_GL_CreateContext(window);
@@ -302,7 +466,7 @@ int main(int argc, char *argv[]){
    // Allocate textures TODO: textures?
    
    //// Allocate Texture 0 (Wood) ///////
-   SDL_Surface* surface = SDL_LoadBMP("wood.bmp");
+   SDL_Surface* surface = SDL_LoadBMP("textures/wood.bmp");
    if (surface==NULL){ //If it failed, print the error
         printf("Error: \"%s\"\n",SDL_GetError()); return 1;
     }
@@ -327,8 +491,8 @@ int main(int argc, char *argv[]){
 
 
    //// Allocate Texture 1 (Brick) ///////
-   SDL_Surface* surface1 = SDL_LoadBMP("brick.bmp");
-   if (surface==NULL){ //If it failed, print the error
+   SDL_Surface* surface1 = SDL_LoadBMP("textures/brick.bmp");
+   if (surface1==NULL){ //If it failed, print the error
         printf("Error: \"%s\"\n",SDL_GetError()); return 1;
     }
     GLuint tex1;
@@ -349,6 +513,32 @@ int main(int argc, char *argv[]){
     glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
     
     SDL_FreeSurface(surface1);
+   //// End Allocate Texture ///////
+   
+   
+   // allocate door texture
+   SDL_Surface* surface2 = SDL_LoadBMP("textures/door.bmp");
+   if (surface2==NULL){ //If it failed, print the error
+        printf("Error: \"%s\"\n",SDL_GetError()); return 1;
+    }
+    GLuint tex2;
+    glGenTextures(1, &tex2);
+    
+    //Load the texture into memory
+    glActiveTexture(GL_TEXTURE2);
+    
+    glBindTexture(GL_TEXTURE_2D, tex2);
+    //What to do outside 0-1 range
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //How to filter
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface2->w,surface2->h, 0, GL_BGR,GL_UNSIGNED_BYTE,surface2->pixels);
+    glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
+    
+    SDL_FreeSurface(surface2);
    //// End Allocate Texture ///////
    
    
@@ -403,6 +593,8 @@ int main(int argc, char *argv[]){
          if (windowEvent.type == SDL_QUIT) quit = true;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_ESCAPE)
             quit = true;
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_y)
+            debug();
          
          if (windowEvent.type == SDL_KEYDOWN) {
             glm::vec3 moveCam = glm::vec3(0,0,0);
@@ -419,15 +611,8 @@ int main(int argc, char *argv[]){
             } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // out
                moveCam = -normalize(camLook - camPos);
             } else if (windowEvent.key.keysym.sym == SDLK_LEFT) {  // rotate left
-//               camLook = glm::rotate(camLook, 3.1415f/120.f, camUp);
-//               camLook = camLook - camPos;
-//               camLook = glm::rotate(camLook, 3.1415f/240.f, glm::normalize(camUp));
-//               camLook = camLook + camPos;
                w += angleSpeed;
             } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // rotate right
-//               camLook = camLook - camPos;
-//               camLook = glm::rotate(camLook, -3.1415f/240.f, camUp);
-//               camLook = camLook + camPos;  // sheesh
                w -= angleSpeed;
             } else {
                moveCam = glm::vec3(0,0,0);
@@ -438,10 +623,13 @@ int main(int argc, char *argv[]){
             camLook.x = camPos.x + std::cos(lookAngle);
             camLook.y = camPos.y + std::sin(lookAngle);
             
+            // handles movement and cell collisions
+            moveCell(moveCam);
             
-            camPos += moveCam * moveBy/60.0f;
-            camLook += moveCam * moveBy/60.0f;
-            
+//            if (checkPos()) {
+//               camPos += moveCam * moveBy/60.0f;
+//               camLook += moveCam * moveBy/60.0f;
+//            }
             
 //            camLook.x = camPos.x + std::sin(lookAngle);
 //            camLook.y = camPos.y + std::cos(lookAngle);
@@ -479,7 +667,7 @@ int main(int argc, char *argv[]){
       
       
       
-      // Do....something with textures - make active? set up so geometry can find them? TODO: is there a way to make this shit an array?
+      // make textures available to shader TODO: is there a way to make this shit an array?
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, tex0);
       glUniform1i(glGetUniformLocation(shader, "tex0"), 0);
@@ -487,6 +675,10 @@ int main(int argc, char *argv[]){
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, tex1);
       glUniform1i(glGetUniformLocation(shader, "tex1"), 1);
+      
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex2);
+      glUniform1i(glGetUniformLocation(shader, "tex2"), 2);
       
       
       

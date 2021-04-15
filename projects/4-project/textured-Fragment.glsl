@@ -10,6 +10,7 @@ out vec4 outColor;
 
 uniform sampler2D tex0;
 uniform sampler2D tex1;
+uniform sampler2D tex2;
 
 uniform int texID;
 
@@ -21,7 +22,9 @@ void main() {
   else if (texID == 0)
     color = texture(tex0, texcoord).rgb;
   else if (texID == 1)
-    color = texture(tex1, texcoord).rgb;  
+     color = texture(tex1, texcoord).rgb;
+   else if (texID == 2)
+      color = texture(tex2, texcoord).rgb;
   else{
     outColor = vec4(1,0,0,1);
     return; //This was an error, stop lighting!
