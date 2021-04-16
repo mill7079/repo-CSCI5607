@@ -805,9 +805,10 @@ int main(int argc, char *argv[]){
    bool quit = false;
    bool ghost = false;
    bool transparent = true;
+   glm::vec3 moveCam = glm::vec3(0,0,0);
+   float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
    while (!quit){
       // Handle all window events (e.g. key presses)
-      float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
 //      lookAngle = 0.0f;
       while (SDL_PollEvent(&windowEvent)){
          if (windowEvent.type == SDL_QUIT) quit = true;
@@ -840,7 +841,6 @@ int main(int argc, char *argv[]){
          }
          
          if (windowEvent.type == SDL_KEYDOWN) {
-            glm::vec3 moveCam = glm::vec3(0,0,0);
             if (windowEvent.key.keysym.sym == SDLK_LEFT) {  // left
                moveCam = -camRight;
             } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // right
@@ -860,19 +860,10 @@ int main(int argc, char *argv[]){
                w += angleSpeed;
             } else if (windowEvent.key.keysym.sym == SDLK_d) {  // rotate right
                w -= angleSpeed;
-            } else {
-               moveCam = glm::vec3(0,0,0);
             }
-            
-            lookAngle += w * 1/60.0f;
-            
-            camLook.x = camPos.x + std::cos(lookAngle);
-            camLook.y = camPos.y + std::sin(lookAngle);
-            
-            // handles movement and cell collisions
-            moveCell(moveCam);
-            
-            camRight = normalize(glm::cross((camLook - camPos),camUp));
+//            else {
+//               moveCam = glm::vec3(0,0,0);
+//            }
             
 //            if (checkPos()) {
 //               camPos += moveCam * moveBy/60.0f;
@@ -882,6 +873,23 @@ int main(int argc, char *argv[]){
 //            camLook.x = camPos.x + std::sin(lookAngle);
 //            camLook.y = camPos.y + std::cos(lookAngle);
 //            glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
+         } // if key down
+         
+         // release velocities if keys are released
+         if (windowEvent.type == SDL_KEYUP) {
+            switch (windowEvent.key.keysym.sym) {
+               case SDLK_LEFT:
+               case SDLK_RIGHT:
+               case SDLK_UP:
+               case SDLK_DOWN:
+                  moveCam = glm::vec3(0,0,0);
+                  break;
+               case SDLK_a:
+               case SDLK_d:
+                  w = 0.0f;
+               default:
+                  break;
+            }
          }
          
 //         if (windowEvent.type == SDL_MOUSEMOTION && windowEvent.button.button == SDL_BUTTON_LEFT) {
@@ -891,7 +899,22 @@ int main(int argc, char *argv[]){
 //            std::cout << moveX << std::endl;
 //            camLook = glm::rotate(camLook, moveX/rotateSpeed, camUp);
 //        }
-      }
+      } // while loop for window events
+      
+      // move things according to keys
+      lookAngle += w * 1/60.0f;
+      
+      camLook.x = camPos.x + std::cos(lookAngle);
+      camLook.y = camPos.y + std::sin(lookAngle);
+      
+      // handles movement and cell collisions
+      moveCell(moveCam);
+      
+      // reset right vector
+      camRight = normalize(glm::cross((camLook - camPos),camUp));
+      
+      
+      // start other stuff
       
       // Clear screen
 //      glClearColor(.2f, 0.4f, 0.8f, 1.0f);
