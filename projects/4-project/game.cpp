@@ -257,11 +257,19 @@ void draw(int shader) {
                glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
                break;
             case 'A':
-            case 'B':
-            case 'C':
-            case 'D':
-            case 'E':
                tex = 2;
+               break;
+            case 'B':
+               tex = 3;
+               break;
+            case 'C':
+               tex = 4;
+               break;
+            case 'D':
+               tex = 5;
+               break;
+            case 'E':
+               tex = 6;
                break;
             default:
                tex = -1;
@@ -286,19 +294,19 @@ void draw(int shader) {
          bool key = true;
          switch (c.status) {
             case 'a':
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
+               tex = 2;
                break;
             case 'b':
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,1,0)));
+               tex = 3;
                break;
             case 'c':
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,0,1)));
+               tex = 4;
                break;
             case 'd':
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,1)));
+               tex = 5;
                break;
             case 'e':
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,1,0)));
+               tex = 6;
                break;
             default:
                key = false;
@@ -461,7 +469,7 @@ int main(int argc, char *argv[]){
    // Allocate textures TODO: textures?
    
    //// Allocate Texture 0 (Wood) ///////
-   SDL_Surface* surface = SDL_LoadBMP("textures/wood.bmp");
+   SDL_Surface* surface = SDL_LoadBMP("textures/floor.bmp");
    if (surface==NULL){ //If it failed, print the error
         printf("Error: \"%s\"\n",SDL_GetError()); return 1;
     }
@@ -486,7 +494,7 @@ int main(int argc, char *argv[]){
 
 
    //// Allocate Texture 1 (Brick) ///////
-   SDL_Surface* surface1 = SDL_LoadBMP("textures/brick.bmp");
+   SDL_Surface* surface1 = SDL_LoadBMP("textures/wall.bmp");
    if (surface1==NULL){ //If it failed, print the error
         printf("Error: \"%s\"\n",SDL_GetError()); return 1;
     }
@@ -512,7 +520,7 @@ int main(int argc, char *argv[]){
    
    
    // allocate door texture
-   SDL_Surface* surface2 = SDL_LoadBMP("textures/door.bmp");
+   SDL_Surface* surface2 = SDL_LoadBMP("textures/door1.bmp");
    if (surface2==NULL){ //If it failed, print the error
         printf("Error: \"%s\"\n",SDL_GetError()); return 1;
     }
@@ -536,6 +544,106 @@ int main(int argc, char *argv[]){
     SDL_FreeSurface(surface2);
    //// End Allocate Texture ///////
    
+   // allocate door texture
+   SDL_Surface* surface3 = SDL_LoadBMP("textures/door2.bmp");
+   if (surface3==NULL){ //If it failed, print the error
+        printf("Error: \"%s\"\n",SDL_GetError()); return 1;
+    }
+    GLuint tex3;
+    glGenTextures(1, &tex3);
+    
+    //Load the texture into memory
+    glActiveTexture(GL_TEXTURE3);
+    
+    glBindTexture(GL_TEXTURE_2D, tex3);
+    //What to do outside 0-1 range
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //How to filter
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface3->w,surface3->h, 0, GL_BGR,GL_UNSIGNED_BYTE,surface3->pixels);
+    glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
+    
+    SDL_FreeSurface(surface3);
+   //// End Allocate Texture ///////
+   
+   // allocate door texture
+   SDL_Surface* surface4 = SDL_LoadBMP("textures/door3.bmp");
+   if (surface4==NULL){ //If it failed, print the error
+        printf("Error: \"%s\"\n",SDL_GetError()); return 1;
+    }
+    GLuint tex4;
+    glGenTextures(1, &tex4);
+    
+    //Load the texture into memory
+    glActiveTexture(GL_TEXTURE2);
+    
+    glBindTexture(GL_TEXTURE_2D, tex4);
+    //What to do outside 0-1 range
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //How to filter
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface4->w,surface4->h, 0, GL_BGR,GL_UNSIGNED_BYTE,surface4->pixels);
+    glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
+    
+    SDL_FreeSurface(surface4);
+   //// End Allocate Texture ///////
+   
+   
+   // allocate door texture
+   SDL_Surface* surface5 = SDL_LoadBMP("textures/door4.bmp");
+   if (surface5==NULL){ //If it failed, print the error
+        printf("Error: \"%s\"\n",SDL_GetError()); return 1;
+    }
+    GLuint tex5;
+    glGenTextures(1, &tex5);
+    
+    //Load the texture into memory
+    glActiveTexture(GL_TEXTURE5);
+    
+    glBindTexture(GL_TEXTURE_2D, tex5);
+    //What to do outside 0-1 range
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //How to filter
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface5->w,surface5->h, 0, GL_BGR,GL_UNSIGNED_BYTE,surface5->pixels);
+    glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
+    
+    SDL_FreeSurface(surface5);
+   //// End Allocate Texture ///////
+   
+   // allocate door texture
+   SDL_Surface* surface6 = SDL_LoadBMP("textures/door5.bmp");
+   if (surface6==NULL){ //If it failed, print the error
+        printf("Error: \"%s\"\n",SDL_GetError()); return 1;
+    }
+    GLuint tex6;
+    glGenTextures(1, &tex6);
+    
+    //Load the texture into memory
+    glActiveTexture(GL_TEXTURE6);
+    
+    glBindTexture(GL_TEXTURE_2D, tex6);
+    //What to do outside 0-1 range
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //How to filter
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface6->w,surface6->h, 0, GL_BGR,GL_UNSIGNED_BYTE,surface6->pixels);
+    glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
+    
+    SDL_FreeSurface(surface6);
+   //// End Allocate Texture ///////
    
    
    
@@ -641,7 +749,9 @@ int main(int argc, char *argv[]){
       }
       
       // Clear screen
-      glClearColor(.2f, 0.4f, 0.8f, 1.0f);
+//      glClearColor(.2f, 0.4f, 0.8f, 1.0f);
+      glClearColor(0.f, 0.f, 0.f, 1.0f);
+
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       
       // Specify shader to use
@@ -674,6 +784,18 @@ int main(int argc, char *argv[]){
       glActiveTexture(GL_TEXTURE2);
       glBindTexture(GL_TEXTURE_2D, tex2);
       glUniform1i(glGetUniformLocation(shader, "tex2"), 2);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex2);
+      glUniform1i(glGetUniformLocation(shader, "tex3"), 3);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex2);
+      glUniform1i(glGetUniformLocation(shader, "tex4"), 4);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex2);
+      glUniform1i(glGetUniformLocation(shader, "tex5"), 5);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex2);
+      glUniform1i(glGetUniformLocation(shader, "tex6"), 6);
       
       
       
