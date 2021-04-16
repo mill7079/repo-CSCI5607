@@ -33,7 +33,7 @@ std::vector<glm::vec2> modelBounds;  // vec2's are (offset, length) for each mod
 std::string modelFiles[] = {"models/cube.txt", "models/teapot.txt"} ;  // indices correspond ^
 float zOffset = 0;
 float lookAngle = 0.f, angleSpeed = 1.8f;
-float camRadius = 0.3f;
+float camRadius = 0.4f;
 
 bool keys[5] = {false, false, false, false, false};
 
@@ -232,9 +232,6 @@ void draw(int shader) {
    glm::mat4 model;
    for (std::vector<cell> row : map) {
       for (cell c : row) {
-         model = glm::mat4(1);
-         model = glm::translate(model, c.center);
-         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
          
          int tex;
          switch (c.status) {
@@ -249,6 +246,7 @@ void draw(int shader) {
             case 'S':
             case '0':
                tex = 0;
+               c.center.z = zOffset - 1.f;
                break;
 //            case 'S':
 //               tex = -1;
@@ -269,6 +267,10 @@ void draw(int shader) {
                tex = -1;
                break;
          }
+         model = glm::mat4(1);
+         model = glm::translate(model, c.center);
+         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+         
          glUniform1i(uniTexID, tex);
          glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
          
@@ -341,10 +343,17 @@ void moveCell(glm::vec3 moveCam) {
       }
    }
    
+   // external walls
    if (newPos.x - camRadius < 0 || newPos.x + camRadius >= mapWidth || newPos.y - camRadius < 0 || newPos.y + camRadius >= mapHeight) return;
-   
-   // don't move into wall if there's a collision
+
    char status = map[newCell.x][newCell.y].status;
+   
+   // unlock door if needed
+   if (status >= 65 && status <= 69 && keys[status-65]) {
+      map[newCell.x][newCell.y].status = '0';
+   }
+   
+   // check for collisions
    if (status != 'W' && (keys[status-65] || (status < 65 || status > 69))) {
       camPos = newPos;
       camLook += moveCam * moveBy;
@@ -418,7 +427,7 @@ int main(int argc, char *argv[]){
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 
    // Create a window (offsetx, offsety, width, height, flags)
-   SDL_Window* window = SDL_CreateWindow("Maze Game", 0, 0, screenWidth, screenHeight, SDL_WINDOW_OPENGL);
+   SDL_Window* window = SDL_CreateWindow("MazeGame", 0, 0, screenWidth, screenHeight, SDL_WINDOW_OPENGL);
 
    //Create a context to draw in
    SDL_GLContext context = SDL_GL_CreateContext(window);
