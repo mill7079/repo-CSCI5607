@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include "maze.h"
+
 // map variables, have to be declared before cell struct. here comes the bullshit again
 int mapWidth, mapHeight, numWalls, numDoors;
 
@@ -217,10 +219,15 @@ float asdf(glm::vec2 a, glm::vec2 b) {
 
 
 // reads a map file into the map structure for later handling
-void readMapFile() {
+void readMapFile(std::string filename) {
+   map.clear();
+   movables.clear();
+   
    std::ifstream mapFile;
 //   mapFile.open("maps/map2.txt");
-   mapFile.open("maps/map_doorcheck.txt");
+//   mapFile.open("maps/map_doorcheck.txt");
+//   mapFile.open("genmaps/newmaze.txt");
+   mapFile.open(filename);
    
    // read parameters
    mapFile >> mapWidth;
@@ -348,7 +355,6 @@ void draw(int shader) {
                tex = 1;
                mod = 2;
                c.center.z -= 0.3f;
-//               model = glm::translate(model, glm::vec3(c.center.x, c.center.y, c.center.z-0.3f));
                break;
             case 'a':
             case 'b':
@@ -360,10 +366,6 @@ void draw(int shader) {
                tex = 0;
                c.center.z = zOffset - 1.f;
                break;
-//            case 'S':
-//               tex = -1;
-//               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(0,1,0)));
-//               break;
             case 'G':
                tex = -1;
                glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
@@ -400,28 +402,6 @@ void draw(int shader) {
          c.walls(shader);
          
          // draw key models
-         
-//         switch (c.status) {
-//            case 'a':
-//               tex = 2;
-//               break;
-//            case 'b':
-//               tex = 3;
-//               break;
-//            case 'c':
-//               tex = 4;
-//               break;
-//            case 'd':
-//               tex = 5;
-//               break;
-//            case 'e':
-//               tex = 6;
-//               break;
-//            default:
-//               key = false;
-//               break;
-//         }
-         
          bool key = (c.status >= 97 && c.status <= 101);
          if (key && !activeKey) {
             model = glm::mat4(1);
@@ -582,7 +562,8 @@ int main(int argc, char *argv[]){
 
    
    // Read map file to set up map
-   readMapFile();
+//   readMapFile();
+   readMapFile("maps/map2.txt");
    
    // Load models, set up associated arrays and variables
    loadModels();
@@ -834,8 +815,11 @@ int main(int argc, char *argv[]){
             quit = true;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_y)
             debug();
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_o) {
+            readMapFile(makeMaze(std::rand()%10 + 2, std::rand()%10 + 2));
+         }
          
-         // ghost mode
+         // ghost mode toggle
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_g && transparent) {
             ghost = !ghost;
             if (!ghost) {
@@ -845,7 +829,7 @@ int main(int argc, char *argv[]){
             }
          }
          
-         // transparent
+         // transparency toggle
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_t) {
             transparent = !transparent;
             if (transparent) {
@@ -867,7 +851,7 @@ int main(int argc, char *argv[]){
 //               moveCam = -camUp;
 //               std::cout << "s" << (angleSpeed / 30.0f) << std::endl;
 //               std::cout << camUp.x << " " << camUp.y << " " << camUp.z << std::endl;
-               camUp = glm::rotate(camUp, angleSpeed / 30.0f, camRight);
+//               camUp = glm::rotate(camUp, angleSpeed / 30.0f, camRight);
             } else if (windowEvent.key.keysym.sym == SDLK_UP) {  // forward
                moveCam = normalize(camLook - camPos);
             } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // back
@@ -980,6 +964,9 @@ int main(int argc, char *argv[]){
    SDL_GL_DeleteContext(context);
    SDL_Quit();
    delete modelData;
+   
+   for (movable* m : movables) free(m);
+   
    return 0;
 }
 
