@@ -30,7 +30,7 @@ int mapWidth, mapHeight, numWalls, numDoors;
 // model variables
 std::vector<float> vertices;
 std::vector<glm::vec2> modelBounds;  // vec2's are (offset, length) for each model
-std::string modelFiles[] = {"models/cube.txt", "models/teapot.txt"} ;  // indices correspond ^
+std::string modelFiles[] = {"models/cube.txt", "models/knot.txt", "models/sphere.txt"} ;  // indices correspond ^
 float zOffset = 0;
 float lookAngle = 0.f, angleSpeed = 1.8f;
 float camRadius = 0.4f;
@@ -233,10 +233,14 @@ void draw(int shader) {
    for (std::vector<cell> row : map) {
       for (cell c : row) {
          
-         int tex;
+         int tex, mod = 0;
+         model = glm::mat4(1);
          switch (c.status) {
             case 'W':
                tex = 1;
+               mod = 2;
+               c.center.z -= 0.3f;
+//               model = glm::translate(model, glm::vec3(c.center.x, c.center.y, c.center.z-0.3f));
                break;
             case 'a':
             case 'b':
@@ -275,12 +279,11 @@ void draw(int shader) {
                tex = -1;
                break;
          }
-         model = glm::mat4(1);
          model = glm::translate(model, c.center);
          glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
          
          glUniform1i(uniTexID, tex);
-         glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);
+         glDrawArrays(GL_TRIANGLES, modelBounds[mod].x, modelBounds[mod].y);
          
          // draw outer walls
          c.walls(shader);
@@ -646,6 +649,11 @@ int main(int argc, char *argv[]){
    //// End Allocate Texture ///////
    
    
+   // ~transparency~
+   glEnable(GL_BLEND);
+//   glBlendFunc(GL_ONE, GL_ONE);
+   glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
+//   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
    
    
    // Create VAO/VBO
@@ -701,21 +709,21 @@ int main(int argc, char *argv[]){
          
          if (windowEvent.type == SDL_KEYDOWN) {
             glm::vec3 moveCam = glm::vec3(0,0,0);
-            if (windowEvent.key.keysym.sym == SDLK_a) {  // left
+            if (windowEvent.key.keysym.sym == SDLK_LEFT) {  // left
                moveCam = -camRight;
-            } else if (windowEvent.key.keysym.sym == SDLK_d) {  // right
+            } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // right
                moveCam = camRight;
             } else if (windowEvent.key.keysym.sym == SDLK_w) {  // up
                moveCam = camUp;
             } else if (windowEvent.key.keysym.sym == SDLK_s) {  // down
                moveCam = -camUp;
-            } else if (windowEvent.key.keysym.sym == SDLK_UP) {  // in
+            } else if (windowEvent.key.keysym.sym == SDLK_UP) {  // forward
                moveCam = normalize(camLook - camPos);
-            } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // out
+            } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // back
                moveCam = -normalize(camLook - camPos);
-            } else if (windowEvent.key.keysym.sym == SDLK_LEFT) {  // rotate left
+            } else if (windowEvent.key.keysym.sym == SDLK_a) {  // rotate left
                w += angleSpeed;
-            } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // rotate right
+            } else if (windowEvent.key.keysym.sym == SDLK_d) {  // rotate right
                w -= angleSpeed;
             } else {
                moveCam = glm::vec3(0,0,0);
@@ -728,6 +736,8 @@ int main(int argc, char *argv[]){
             
             // handles movement and cell collisions
             moveCell(moveCam);
+            
+            camRight = normalize(glm::cross((camLook - camPos),camUp));
             
 //            if (checkPos()) {
 //               camPos += moveCam * moveBy/60.0f;
