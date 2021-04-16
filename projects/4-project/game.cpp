@@ -105,8 +105,63 @@ struct cell {
    }
 };
 
+
 // 2D array of cells representing the map
 std::vector<std::vector<cell>> map;
+
+
+
+struct movable {
+   glm::vec3 pos;
+   glm::vec2 c;
+   bool active = false;
+   movable(){};
+   
+   virtual void move(int) = 0;
+   void activate() {
+      active = true;
+   }
+};
+
+struct door: movable {
+   float mv = 0.01f;
+   int tex = 2;
+   door(glm::vec3 position, glm::vec2 c) {
+      pos = position;
+      this->c = c;
+      
+      tex = 2 + (map[c.x][c.y].status - 65);
+   }
+   
+   void move(int shader) override {
+      if (!active) return;
+      if (map[c.x][c.y].center.z <= zOffset - 1.f) {
+//         std::cout << "hello" << std::endl;
+         map[c.x][c.y].status = '0';
+         active = false;
+         return;
+      }
+      
+//      std::cout << "moving" << std::endl;
+      GLint uniTexID = glGetUniformLocation(shader, "texID");
+      GLint uniModel = glGetUniformLocation(shader, "model");
+      
+      map[c.x][c.y].center.z -= mv;
+      
+      glm::mat4 model(1);
+      model = glm::translate(model, map[c.x][c.y].center);
+      glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+      
+      glUniform1i(uniTexID, tex);
+      glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);  // doors are cubes
+   }
+};
+//struct key: movable {
+//
+//};
+
+// array of movable objects
+std::vector<movable*> movables;
 
 // miscellaneous variables
 float screenWidth = 850, screenHeight = 850;
@@ -166,10 +221,17 @@ void readMapFile() {
                camLook = c.center;
                camLook.x += 1.f;
                camLook.z += 1.f;
+               camRight = normalize(glm::cross((camLook - camPos),camUp));
                break;
             case 'G':
                end = glm::vec2(i, j);
                break;
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+               movables.push_back(new door(c.center, glm::vec2(i, j)));
             default:
                break;
          }
@@ -233,6 +295,14 @@ void draw(int shader) {
    for (std::vector<cell> row : map) {
       for (cell c : row) {
          
+         bool activeDoor = false;
+         for (movable* m : movables) {
+            if ((map[m->c.x][m->c.y].status == c.status) && m->active) {
+               activeDoor = true;
+               break;
+            }
+         }
+         
          int tex, mod = 0;
          model = glm::mat4(1);
          switch (c.status) {
@@ -279,11 +349,14 @@ void draw(int shader) {
                tex = -1;
                break;
          }
-         model = glm::translate(model, c.center);
-         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
          
-         glUniform1i(uniTexID, tex);
-         glDrawArrays(GL_TRIANGLES, modelBounds[mod].x, modelBounds[mod].y);
+         if (!activeDoor) {
+            model = glm::translate(model, c.center);
+            glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+            
+            glUniform1i(uniTexID, tex);
+            glDrawArrays(GL_TRIANGLES, modelBounds[mod].x, modelBounds[mod].y);
+         }
          
          // draw outer walls
          c.walls(shader);
@@ -355,27 +428,30 @@ void moveCell(glm::vec3 moveCam) {
    }
    
    // external walls
-   if (newPos.x - camRadius < 0 || newPos.x + camRadius >= mapWidth || newPos.y - camRadius < 0 || newPos.y + camRadius >= mapHeight) return;
+//   if (newPos.x - camRadius < 0 || newPos.x + camRadius >= mapWidth || newPos.y - camRadius < 0 || newPos.y + camRadius >= mapHeight) return;
+   if (newPos.x < 0 || newPos.x >= mapWidth || newPos.y < 0 || newPos.y >= mapHeight) return;
 
    char status = map[newCell.x][newCell.y].status;
    
    // unlock door if needed
    if (status >= 65 && status <= 69 && keys[status-65]) {
-      map[newCell.x][newCell.y].status = '0';
+//      map[newCell.x][newCell.y].status = '0';
+//      std::cout << "ehllo" << std::endl;
+      for (movable* m : movables) {
+         if (map[m->c.x][m->c.y].status == status && !m->active) {
+            m->activate();
+            std::cout << "activate " << status << std::endl;
+         }
+      }
    }
    
    // check for collisions
-   if (status != 'W' && (keys[status-65] || (status < 65 || status > 69))) {
+   // normal case
+   if (status != 'W' && (status < 65 || status > 69)) {
       camPos = newPos;
       camLook += moveCam * moveBy;
-   
-//      if (newCell != cur) {
-//         std::cout << "old cell: " << cur.x << " " << cur.y << std::endl;
-//         std::cout << "new cell: " << newCell.x << " " << newCell.y << std::endl;
-//
-//      }
       cur = newCell;
-   } else {  // move along wall
+   } else {  // collision; move along wall
       glm::vec3 movement = moveCam * moveBy, axis;
       if (glm::length(movement) == 0) return;
       if (newCell.x != cur.x) {  // vertical wall; wall off to side
@@ -652,7 +728,10 @@ int main(int argc, char *argv[]){
    // ~transparency~
    glEnable(GL_BLEND);
 //   glBlendFunc(GL_ONE, GL_ONE);
-   glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
+   glBlendFunc(GL_ONE, GL_DST_COLOR);  // ghost mode
+//   glDisable(GL_DEPTH_TEST);
+   glEnable(GL_DEPTH_TEST);
+//   glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
 //   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
    
    
@@ -691,11 +770,12 @@ int main(int argc, char *argv[]){
    GLint uniProj = glGetUniformLocation(shader, "proj");
 
    glBindVertexArray(0);  // unbind the VAO
-   glEnable(GL_DEPTH_TEST);
+//   glEnable(GL_DEPTH_TEST);
    
    // Event loop
    SDL_Event windowEvent;
    bool quit = false;
+   bool ghost = false;
    while (!quit){
       // Handle all window events (e.g. key presses)
       float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
@@ -706,6 +786,14 @@ int main(int argc, char *argv[]){
             quit = true;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_y)
             debug();
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_z) {
+            ghost = !ghost;
+            if (!ghost) {
+               glEnable(GL_DEPTH_TEST);
+            } else {
+               glDisable(GL_DEPTH_TEST);
+            }
+         }
          
          if (windowEvent.type == SDL_KEYDOWN) {
             glm::vec3 moveCam = glm::vec3(0,0,0);
@@ -813,6 +901,9 @@ int main(int argc, char *argv[]){
       // Bind VAO, draw geometry, double buffer
       glBindVertexArray(vao);
       draw(shader);
+      for (movable* m : movables) {
+         m->move(shader);
+      }
          // Draw models from VBO given an offset and a length: manipulate model matrix, then draw
             // (can draw same model multiple times here using different model matrices)
       SDL_GL_SwapWindow(window);
