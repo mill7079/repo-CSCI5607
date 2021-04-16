@@ -35,6 +35,12 @@ float zOffset = 0;
 float lookAngle = 0.f, angleSpeed = 1.8f;
 float camRadius = 0.4f;
 
+// camera variables: position, look at point, and up vector
+glm::vec3 camPos = glm::vec3(2.5f, 2.5f, 10.f);
+glm::vec3 camLook = glm::vec3(2.5f, 2.5f, 9.f);
+glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
+
 bool keys[5] = {false, false, false, false, false};
 
 // represents a grid cell on the map
@@ -108,7 +114,7 @@ struct cell {
 
 // 2D array of cells representing the map
 std::vector<std::vector<cell>> map;
-
+// has to be declared before the movable stuff because c++ is dumb
 
 
 struct movable {
@@ -156,9 +162,37 @@ struct door: movable {
       glDrawArrays(GL_TRIANGLES, modelBounds[0].x, modelBounds[0].y);  // doors are cubes
    }
 };
-//struct key: movable {
-//
-//};
+struct key: movable {
+   int tex = 2;
+   int mod = 1;  // keys are knots for know
+   key(glm::vec3 position, glm::vec2 c) {
+      pos = position;
+      this->c = c;
+      
+      tex = 2 + (map[c.x][c.y].status - 97);
+   }
+   
+   void move(int shader) override {
+      if (!active) return;
+      
+      GLint uniTexID = glGetUniformLocation(shader, "texID");
+      GLint uniModel = glGetUniformLocation(shader, "model");
+      
+      glm::vec3 displace = camRadius * (camLook - camPos) +
+         (((map[c.x][c.y].status - 99) / 15.f) * camRight);
+//      std::cout << ((map[c.x][c.y].status - 99) / 30.f) << " "<< map[c.x][c.y].status << std::endl;
+      displace.z -= 0.1f;
+      pos = camPos + displace;
+      
+      glm::mat4 model(1);
+      model = glm::translate(model, pos);
+      model = glm::scale(model, glm::vec3(0.07f, 0.07f, 0.07f));
+      glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+      
+      glUniform1i(uniTexID, tex);
+      glDrawArrays(GL_TRIANGLES, modelBounds[mod].x, modelBounds[mod].y);
+   }
+};
 
 // array of movable objects
 std::vector<movable*> movables;
@@ -168,16 +202,10 @@ float screenWidth = 850, screenHeight = 850;
 //cell start, end;
 glm::vec2 cur, end;
 
-// camera variables: position, look at point, and up vector
-//glm::vec3 camPos = glm::vec3(3.f, 0.f, 10.f);
-glm::vec3 camPos = glm::vec3(2.5f, 2.5f, 10.f);
-//glm::vec3 camLook = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 camLook = glm::vec3(2.5f, 2.5f, 9.f);
-//glm::vec3 camUp = glm::vec3(0.0f, 0.0f, 1.0f);
-glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-glm::vec3 camRight = normalize(glm::cross((camLook - camPos),camUp));
-float moveBy = 2.0f/60.0f;
-float rotateSpeed = 100000.0f;
+// how much to move by each move
+// sorry dr guy i forgot how to do animation
+float moveBy = 1.0f/30.0f;
+//float rotateSpeed = 100000.0f;
 
 // this is a distance function but if i call it distance things die so asdf it is
 float asdf(glm::vec2 a, glm::vec2 b) {
@@ -191,7 +219,8 @@ float asdf(glm::vec2 a, glm::vec2 b) {
 // reads a map file into the map structure for later handling
 void readMapFile() {
    std::ifstream mapFile;
-   mapFile.open("maps/map2.txt");
+//   mapFile.open("maps/map2.txt");
+   mapFile.open("maps/map_doorcheck.txt");
    
    // read parameters
    mapFile >> mapWidth;
@@ -232,6 +261,14 @@ void readMapFile() {
             case 'D':
             case 'E':
                movables.push_back(new door(c.center, glm::vec2(i, j)));
+               break;
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+               movables.push_back(new key(c.center, glm::vec2(i, j)));
+               break;
             default:
                break;
          }
@@ -295,10 +332,11 @@ void draw(int shader) {
    for (std::vector<cell> row : map) {
       for (cell c : row) {
          
-         bool activeDoor = false;
+         bool activeDoor = false, activeKey = false;;
          for (movable* m : movables) {
             if ((map[m->c.x][m->c.y].status == c.status) && m->active) {
-               activeDoor = true;
+               if (c.status < 80) activeDoor = true;
+               else activeKey = true;
                break;
             }
          }
@@ -362,34 +400,37 @@ void draw(int shader) {
          c.walls(shader);
          
          // draw key models
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(c.center.x, c.center.y, c.center.z + 0.8f));
-         model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f));
-         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
-         tex = -1;
-         bool key = true;
-         switch (c.status) {
-            case 'a':
-               tex = 2;
-               break;
-            case 'b':
-               tex = 3;
-               break;
-            case 'c':
-               tex = 4;
-               break;
-            case 'd':
-               tex = 5;
-               break;
-            case 'e':
-               tex = 6;
-               break;
-            default:
-               key = false;
-               break;
-         }
          
-         if (key) {
+//         switch (c.status) {
+//            case 'a':
+//               tex = 2;
+//               break;
+//            case 'b':
+//               tex = 3;
+//               break;
+//            case 'c':
+//               tex = 4;
+//               break;
+//            case 'd':
+//               tex = 5;
+//               break;
+//            case 'e':
+//               tex = 6;
+//               break;
+//            default:
+//               key = false;
+//               break;
+//         }
+         
+         bool key = (c.status >= 97 && c.status <= 101);
+         if (key && !activeKey) {
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(c.center.x, c.center.y, c.center.z + 0.8f));
+            model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f));
+            glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+   //         tex = -1;
+            tex = 2 + (c.status - 97);
+            
             glUniform1i(uniTexID, tex);
             glDrawArrays(GL_TRIANGLES, modelBounds[1].x, modelBounds[1].y);
          }
@@ -471,9 +512,17 @@ void moveCell(glm::vec3 moveCam) {
       moveCell(glm::vec3(0,0,0));
    }
    
+   // pick up key
    if (isKey(status)) {
 //      std::cout << "status: " << status << " -97: " << (status-97) << std::endl;
       keys[(status - 97)] = true;
+      
+      for (movable* m : movables) {
+         if (map[m->c.x][m->c.y].status == status && !m->active) {
+            m -> activate();
+            std::cout << "activate " << status << std::endl;
+         }
+      }
 //      std::cout << keys[0] << keys[1] << keys[2] << keys[3] << keys[4] << std::endl;
    }
 }
@@ -812,10 +861,13 @@ int main(int argc, char *argv[]){
                moveCam = -camRight;
             } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // right
                moveCam = camRight;
-            } else if (windowEvent.key.keysym.sym == SDLK_w) {  // up
-               moveCam = camUp;
-            } else if (windowEvent.key.keysym.sym == SDLK_s) {  // down
-               moveCam = -camUp;
+            } else if (windowEvent.key.keysym.sym == SDLK_w) {  // rotate up
+//               moveCam = camUp;
+            } else if (windowEvent.key.keysym.sym == SDLK_s) {  // rotate down
+//               moveCam = -camUp;
+//               std::cout << "s" << (angleSpeed / 30.0f) << std::endl;
+//               std::cout << camUp.x << " " << camUp.y << " " << camUp.z << std::endl;
+               camUp = glm::rotate(camUp, angleSpeed / 30.0f, camRight);
             } else if (windowEvent.key.keysym.sym == SDLK_UP) {  // forward
                moveCam = normalize(camLook - camPos);
             } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // back
