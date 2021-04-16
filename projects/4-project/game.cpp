@@ -729,8 +729,6 @@ int main(int argc, char *argv[]){
    glEnable(GL_BLEND);
 //   glBlendFunc(GL_ONE, GL_ONE);
    glBlendFunc(GL_ONE, GL_DST_COLOR);  // ghost mode
-//   glDisable(GL_DEPTH_TEST);
-   glEnable(GL_DEPTH_TEST);
 //   glBlendFunc(GL_SRC_COLOR, GL_DST_COLOR);
 //   glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_DST_COLOR);
    
@@ -770,12 +768,13 @@ int main(int argc, char *argv[]){
    GLint uniProj = glGetUniformLocation(shader, "proj");
 
    glBindVertexArray(0);  // unbind the VAO
-//   glEnable(GL_DEPTH_TEST);
+   glEnable(GL_DEPTH_TEST);
    
    // Event loop
    SDL_Event windowEvent;
    bool quit = false;
    bool ghost = false;
+   bool transparent = true;
    while (!quit){
       // Handle all window events (e.g. key presses)
       float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
@@ -786,12 +785,24 @@ int main(int argc, char *argv[]){
             quit = true;
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_y)
             debug();
-         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_z) {
+         
+         // ghost mode
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_g && transparent) {
             ghost = !ghost;
             if (!ghost) {
                glEnable(GL_DEPTH_TEST);
             } else {
                glDisable(GL_DEPTH_TEST);
+            }
+         }
+         
+         // transparent
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_t) {
+            transparent = !transparent;
+            if (transparent) {
+               glEnable(GL_BLEND);
+            } else {
+               glDisable(GL_BLEND);
             }
          }
          
