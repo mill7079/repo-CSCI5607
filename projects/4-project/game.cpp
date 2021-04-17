@@ -35,8 +35,11 @@ std::vector<float> vertices;
 std::vector<glm::vec2> modelBounds;  // vec2's are (offset, length) for each model
 std::string modelFiles[] = {"models/cube.txt", "models/knot.txt", "models/sphere.txt"} ;  // indices correspond ^
 float zOffset = 0;
+// random params
 float lookAngle = 0.f, angleSpeed = 1.8f;
 float camRadius = 0.4f;
+float repelAmount = 0.002f;  // avoid sticky collisions
+bool customMap = false;
 
 // camera variables: position, look at point, and up vector
 glm::vec3 camPos = glm::vec3(2.5f, 2.5f, 10.f);
@@ -407,8 +410,8 @@ void draw(int shader) {
             glDrawArrays(GL_TRIANGLES, modelBounds[mod].x, modelBounds[mod].y);
          }
          
-         // draw outer walls
-         c.walls(shader);
+         // draw outer walls if handmade map
+         if (!customMap) c.walls(shader);
          
          // draw key models
          bool key = (c.status >= 97 && c.status <= 101);
@@ -466,6 +469,7 @@ void moveCell(glm::vec3 moveCam) {
    // reached end; start new map
    if (status == 'G') {
       readMapFile(makeMaze(std::rand()%maxDim + minDim, std::rand()%maxDim + minDim));
+      customMap = true;
       return;
    }
    
@@ -489,20 +493,25 @@ void moveCell(glm::vec3 moveCam) {
       cur = newCell;
    } else {  // collision; move along wall
       glm::vec3 movement = moveCam * moveBy, axis;
+      glm::vec3 repel = (camPos - map[newCell.x][newCell.y].center);
       if (glm::length(movement) == 0) return;
-      if (newCell.x != cur.x) {  // vertical wall; wall off to side
+      if (newCell.x != cur.x) {  // horizontal wall; wall above or below
          axis = glm::vec3(1.f, 0.f, 0.f);
-      } else if (newCell.y != cur.y) {  // horizontal wall; wall above or below
+//         repel.x = 0;
+      } else if (newCell.y != cur.y) {  // vertical wall; wall off to side
          axis = glm::vec3(0.f, 1.f, 0.f);
+//         repel.y = 0;
       }
       
+      repel = repelAmount * glm::normalize(repel);
+      repel.z = 0;
       if (glm::dot(movement, axis) < 0) axis *= -1.f;
       
 //      std::cout << "axis: " << axis.x << " " << axis.y << std::endl;
       float m = glm::dot(movement, axis);
       
-      camPos += m*axis;
-      camLook += m*axis;
+      camPos += m*axis + repel;
+      camLook += m*axis + repel;
       
       moveCell(glm::vec3(0,0,0));
    }
@@ -858,6 +867,7 @@ int main(int argc, char *argv[]){
             debug();
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_o) {
             readMapFile(makeMaze(std::rand()%maxDim + minDim, std::rand()%maxDim + minDim));
+            customMap = true;
          }
          
          // ghost mode toggle
