@@ -28,6 +28,7 @@
 
 // map variables, have to be declared before cell struct. here comes the bullshit again
 int mapWidth, mapHeight, numWalls, numDoors;
+int maxDim = 30, minDim = 5;
 
 // model variables
 std::vector<float> vertices;
@@ -222,6 +223,9 @@ float asdf(glm::vec2 a, glm::vec2 b) {
 void readMapFile(std::string filename) {
    map.clear();
    movables.clear();
+   for (int i = 0; i < 5; i++) {
+      keys[i] = false;
+   }
    
    std::ifstream mapFile;
 //   mapFile.open("maps/map2.txt");
@@ -450,9 +454,15 @@ void moveCell(glm::vec3 moveCam) {
    
    // external walls
 //   if (newPos.x - camRadius < 0 || newPos.x + camRadius >= mapWidth || newPos.y - camRadius < 0 || newPos.y + camRadius >= mapHeight) return;
-   if (newPos.x < 0 || newPos.x >= mapWidth || newPos.y < 0 || newPos.y >= mapHeight) return;
+   if (newPos.x - (camRadius/2.f) < 0 || newPos.x + (camRadius/2.f) >= mapWidth || newPos.y - (camRadius/2.f) < 0 || newPos.y + (camRadius/2.f) >= mapHeight) return;
 
    char status = map[newCell.x][newCell.y].status;
+   
+   // reached end; start new map
+   if (status == 'G') {
+      readMapFile(makeMaze(std::rand()%maxDim + minDim, std::rand()%maxDim + minDim));
+      return;
+   }
    
    // unlock door if needed
    if (status >= 65 && status <= 69 && keys[status-65]) {
@@ -817,7 +827,7 @@ int main(int argc, char *argv[]){
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_y)
             debug();
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_o) {
-            readMapFile(makeMaze(std::rand()%10 + 2, std::rand()%10 + 2));
+            readMapFile(makeMaze(std::rand()%maxDim + minDim, std::rand()%maxDim + minDim));
          }
          
          // ghost mode toggle
@@ -857,9 +867,11 @@ int main(int argc, char *argv[]){
             } else if (windowEvent.key.keysym.sym == SDLK_DOWN) {  // back
                moveCam = -normalize(camLook - camPos);
             } else if (windowEvent.key.keysym.sym == SDLK_a) {  // rotate left
-               w += angleSpeed;
+//               w += angleSpeed;
+               w = angleSpeed;
             } else if (windowEvent.key.keysym.sym == SDLK_d) {  // rotate right
-               w -= angleSpeed;
+//               w -= angleSpeed;
+               w = -angleSpeed;
             }
 //            else {
 //               moveCam = glm::vec3(0,0,0);
@@ -901,6 +913,7 @@ int main(int argc, char *argv[]){
 //        }
       } // while loop for window events
       
+//      if (w > 0) std::cout << "w: " << w << std::endl;
       // move things according to keys
       lookAngle += w * 1/60.0f;
       
