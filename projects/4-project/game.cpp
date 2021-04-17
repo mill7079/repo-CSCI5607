@@ -921,6 +921,9 @@ int main(int argc, char *argv[]){
    bool transparent = true;
    glm::vec3 moveCam = glm::vec3(0,0,0);
    float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
+   glm::vec3 prevPos, prevLook, prevUp;
+   bool view = true;
+   bool view2 = true;
    while (!quit){
       // Handle all window events (e.g. key presses)
 //      lookAngle = 0.0f;
@@ -936,6 +939,23 @@ int main(int argc, char *argv[]){
          }
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_v) {
             
+            // go to external viewing location
+            if (view) {
+               // store previous values to return
+               prevPos = camPos;
+               prevLook = camLook;
+               prevUp = camUp;
+               
+               camPos = glm::vec3(mapWidth / 2.f, mapHeight/2.f, 1.5f*std::max(mapWidth, mapHeight) + 1);
+               camLook = glm::vec3(0.0f, 0.0f, 0.0f);
+               camUp = glm::vec3(0.0f, 0.0f, 1.0f);
+            } else {
+               camPos = prevPos;
+               camLook = prevLook;
+               camUp = prevUp;
+            }
+            view = !view;
+            camRight = normalize(glm::cross((camLook - camPos),camUp));
          }
          
          // ghost mode toggle
@@ -964,9 +984,9 @@ int main(int argc, char *argv[]){
             } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // right
                moveCam = camRight;
             } else if (windowEvent.key.keysym.sym == SDLK_w) {  // move up
-               moveCam = camUp;
+//               moveCam = camUp;
             } else if (windowEvent.key.keysym.sym == SDLK_s) {  // move down
-               moveCam = -camUp;
+//               moveCam = -camUp;
 //               std::cout << "s" << (angleSpeed / 30.0f) << std::endl;
 //               std::cout << camUp.x << " " << camUp.y << " " << camUp.z << std::endl;
 //               camUp = glm::rotate(camUp, angleSpeed / 30.0f, camRight);
@@ -1002,6 +1022,8 @@ int main(int argc, char *argv[]){
                case SDLK_RIGHT:
                case SDLK_UP:
                case SDLK_DOWN:
+//               case SDLK_w:
+//               case SDLK_s:
                   moveCam = glm::vec3(0,0,0);
                   break;
                case SDLK_a:
@@ -1022,6 +1044,7 @@ int main(int argc, char *argv[]){
       } // while loop for window events
       
 //      if (w > 0) std::cout << "w: " << w << std::endl;
+
       // move things according to keys
       lookAngle += w * 1/60.0f;
       
@@ -1055,7 +1078,7 @@ int main(int argc, char *argv[]){
                                    camUp);  // Up
       glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
 
-      glm::mat4 proj = glm::perspective(3.14f/4, screenWidth / (float) screenHeight, 0.1f, 30.0f);  // FOV, aspect, near, far; far used to be 10.0f but that seemed short
+      glm::mat4 proj = glm::perspective(3.14f/4, screenWidth / (float) screenHeight, 0.1f, 80.0f);  // FOV, aspect, near, far; far used to be 10.0f but that seemed short
       glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
       
       
