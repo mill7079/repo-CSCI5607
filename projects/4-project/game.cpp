@@ -573,7 +573,7 @@ int main(int argc, char *argv[]){
    
    // Read map file to set up map
 //   readMapFile();
-   readMapFile("maps/map2.txt");
+   readMapFile("maps/map_doorcheck.txt");
    
    // Load models, set up associated arrays and variables
    loadModels();
@@ -697,7 +697,7 @@ int main(int argc, char *argv[]){
     glGenTextures(1, &tex4);
     
     //Load the texture into memory
-    glActiveTexture(GL_TEXTURE2);
+    glActiveTexture(GL_TEXTURE4);
     
     glBindTexture(GL_TEXTURE_2D, tex4);
     //What to do outside 0-1 range
