@@ -371,8 +371,11 @@ void draw(int shader) {
                c.center.z = zOffset - 1.f;
                break;
             case 'G':
-               tex = -1;
-               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
+               tex = 7;
+               mod = 2;
+               c.center.z += 0.2f;
+//               model = glm::scale(model, glm::vec3(2.f,2.f,2.f));
+//               glUniform3fv(color, 1, glm::value_ptr(glm::vec3(1,0,0)));
                break;
             case 'A':
                tex = 2;
@@ -394,8 +397,10 @@ void draw(int shader) {
                break;
          }
          
+         // draw if the model's not a moving door
          if (!activeDoor) {
             model = glm::translate(model, c.center);
+            if (tex == 7) model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
             glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
             
             glUniform1i(uniTexID, tex);
@@ -573,7 +578,7 @@ int main(int argc, char *argv[]){
    
    // Read map file to set up map
 //   readMapFile();
-   readMapFile("maps/map_doorcheck.txt");
+   readMapFile("maps/map2.txt");
    
    // Load models, set up associated arrays and variables
    loadModels();
@@ -689,7 +694,7 @@ int main(int argc, char *argv[]){
    //// End Allocate Texture ///////
    
    // allocate door texture
-   SDL_Surface* surface4 = SDL_LoadBMP("textures/door3.bmp");
+   SDL_Surface* surface4 = SDL_LoadBMP("textures/door3.bmp");  // door3
    if (surface4==NULL){ //If it failed, print the error
         printf("Error: \"%s\"\n",SDL_GetError()); return 1;
     }
@@ -762,6 +767,31 @@ int main(int argc, char *argv[]){
     glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
     
     SDL_FreeSurface(surface6);
+   //// End Allocate Texture ///////
+   
+   // allocate end texture
+   SDL_Surface* surface7 = SDL_LoadBMP("textures/water.bmp");
+   if (surface7==NULL){ //If it failed, print the error
+        printf("Error: \"%s\"\n",SDL_GetError()); return 1;
+    }
+    GLuint tex7;
+    glGenTextures(1, &tex7);
+    
+    //Load the texture into memory
+    glActiveTexture(GL_TEXTURE7);
+    
+    glBindTexture(GL_TEXTURE_2D, tex7);
+    //What to do outside 0-1 range
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //How to filter
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface7->w,surface7->h, 0, GL_BGR,GL_UNSIGNED_BYTE,surface7->pixels);
+    glGenerateMipmap(GL_TEXTURE_2D); //Mip maps the texture
+    
+    SDL_FreeSurface(surface7);
    //// End Allocate Texture ///////
    
    
@@ -977,6 +1007,11 @@ int main(int argc, char *argv[]){
       glActiveTexture(GL_TEXTURE2);
       glBindTexture(GL_TEXTURE_2D, tex2);
       glUniform1i(glGetUniformLocation(shader, "tex6"), 6);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex2);
+      glUniform1i(glGetUniformLocation(shader, "tex7"), 7);
+      
+      // how is this even working????????
       
       
       
