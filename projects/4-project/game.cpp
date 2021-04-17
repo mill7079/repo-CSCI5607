@@ -28,7 +28,7 @@
 
 // map variables, have to be declared before cell struct. here comes the bullshit again
 int mapWidth, mapHeight, numWalls, numDoors;
-int maxDim = 30, minDim = 5;
+int maxDim = 20, minDim = 5;
 
 // model variables
 std::vector<float> vertices;
@@ -39,7 +39,7 @@ float zOffset = 0;
 float lookAngle = 0.f, angleSpeed = 1.8f;
 float camRadius = 0.4f;
 float repelAmount = 0.002f;  // avoid sticky collisions
-bool customMap = false;
+bool customMap = false, ghost = false;
 
 // camera variables: position, look at point, and up vector
 glm::vec3 camPos = glm::vec3(2.5f, 2.5f, 10.f);
@@ -200,6 +200,54 @@ struct key: movable {
    }
 };
 
+int cwa = 0;
+struct wall: movable {  // walls float up and down in ghost mode
+   float mv = 0.001f;
+   float shrink = -0.0005f;
+   float minSize = 0.85f;
+   float maxSize = 1.f;
+   float size = 0.99f;
+   float minDisplace = -0.8f;
+   float maxDisplace = 0.3f;
+   int id;
+   wall(glm::vec3 position, glm::vec2 c) {
+//      std::cout << "pos z: " << position.z << std::endl;
+//      std::cout << "map z: " << map[c.x][c.y].center.z << std::endl;
+      pos = position;
+      pos.z += (rand()/(float)RAND_MAX) * 0.3f - 0.2f;
+      id = cwa++;
+      this->c = c;
+      active = true;
+      if (((int)rand())%2) mv *= -1;
+   }
+   
+   void move(int shader) override {
+      if (!active) return;
+      
+      GLint uniTexID = glGetUniformLocation(shader, "texID");
+      GLint uniModel = glGetUniformLocation(shader, "model");
+      
+      glm::mat4 model(1);
+      if (ghost) {
+//         if (std::abs(pos.z) >= maxDisplace) mv *= -1;
+         if (pos.z <= minDisplace || pos.z >= maxDisplace) mv *= -1;
+         if (size <= minSize || size >= maxSize) shrink *= -1;
+//         std::cout << id << ": "<< pos.z << std::endl;
+         pos.z += mv;
+         model = glm::translate(model, pos);
+         size += shrink;
+         model = glm::scale(model, glm::vec3(size, size, size));
+      } else {
+         model = glm::translate(model, map[c.x][c.y].center);
+      }
+//      model = glm::scale(model, glm::vec3(0.07f, 0.07f, 0.07f));
+      glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+      
+      glUniform1i(uniTexID, 1);
+      glDrawArrays(GL_TRIANGLES, modelBounds[2].x, modelBounds[2].y);
+   }
+};
+
 // array of movable objects
 std::vector<movable*> movables;
 
@@ -209,7 +257,7 @@ float screenWidth = 850, screenHeight = 850;
 glm::vec2 cur, end;
 
 // how much to move by each move
-// sorry dr guy i forgot how to do animation
+// sorry dr guy i forgot how to do animation and i don't have time to look at my old work
 float moveBy = 1.0f/30.0f;
 //float rotateSpeed = 100000.0f;
 
@@ -283,6 +331,11 @@ void readMapFile(std::string filename) {
             case 'e':
                movables.push_back(new key(c.center, glm::vec2(i, j)));
                break;
+            case 'W':
+               c.center.z -= 0.35f;
+               map[i][j].center.z -= 0.35f;
+               movables.push_back(new wall(glm::vec3(c.center.x, c.center.y, c.center.z), glm::vec2(i,j)));
+//               std::cout <<"center" << c.center.z << std::endl;
             default:
                break;
          }
@@ -301,6 +354,13 @@ void readMapFile(std::string filename) {
       std::cout << std::endl;
    }
    
+//   for (i = map.size() - 1; i >= 0; i--) {
+//      for (j = 0; j < map[i].size(); j++) {
+//         std::cout << map[i][j].center.z << " ";
+//      }
+//      std::cout << std::endl;
+//   }
+//
    mapFile.close();
    
    std::cout << cur.x << " " << cur.y << std::endl;
@@ -346,23 +406,32 @@ void draw(int shader) {
    for (std::vector<cell> row : map) {
       for (cell c : row) {
          
-         bool activeDoor = false, activeKey = false;;
+         // draw outer walls if handmade map
+//         if (!customMap)
+            c.walls(shader);
+         
+         // this is aggressively inefficient but idk how to fix it on short notice
+         bool activeDoor = false, activeKey = false, activeWall = false;
          for (movable* m : movables) {
             if ((map[m->c.x][m->c.y].status == c.status) && m->active) {
-               if (c.status < 80) activeDoor = true;
+               if (c.status == 'W') activeWall = true;
+               else if (c.status < 80) activeDoor = true;
                else activeKey = true;
                break;
             }
          }
          
+         // walls are rendered elsewhere
+         if (activeWall) continue;
+         
          int tex, mod = 0;
          model = glm::mat4(1);
          switch (c.status) {
-            case 'W':
-               tex = 1;
-               mod = 2;
-               c.center.z -= 0.3f;
-               break;
+//            case 'W':
+//               tex = 1;
+//               mod = 2;
+//               c.center.z -= 0.3f;
+//               break;
             case 'a':
             case 'b':
             case 'c':
@@ -409,9 +478,6 @@ void draw(int shader) {
             glUniform1i(uniTexID, tex);
             glDrawArrays(GL_TRIANGLES, modelBounds[mod].x, modelBounds[mod].y);
          }
-         
-         // draw outer walls if handmade map
-         if (!customMap) c.walls(shader);
          
          // draw key models
          bool key = (c.status >= 97 && c.status <= 101);
@@ -852,7 +918,6 @@ int main(int argc, char *argv[]){
    // Event loop
    SDL_Event windowEvent;
    bool quit = false;
-   bool ghost = false;
    bool transparent = true;
    glm::vec3 moveCam = glm::vec3(0,0,0);
    float prevX = 0.0f, prevY = 0.0f, w = 0.0f;
@@ -868,6 +933,9 @@ int main(int argc, char *argv[]){
          if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_o) {
             readMapFile(makeMaze(std::rand()%maxDim + minDim, std::rand()%maxDim + minDim));
             customMap = true;
+         }
+         if (windowEvent.type == SDL_KEYUP && windowEvent.key.keysym.sym == SDLK_v) {
+            
          }
          
          // ghost mode toggle
@@ -895,10 +963,10 @@ int main(int argc, char *argv[]){
                moveCam = -camRight;
             } else if (windowEvent.key.keysym.sym == SDLK_RIGHT) {  // right
                moveCam = camRight;
-            } else if (windowEvent.key.keysym.sym == SDLK_w) {  // rotate up
-//               moveCam = camUp;
-            } else if (windowEvent.key.keysym.sym == SDLK_s) {  // rotate down
-//               moveCam = -camUp;
+            } else if (windowEvent.key.keysym.sym == SDLK_w) {  // move up
+               moveCam = camUp;
+            } else if (windowEvent.key.keysym.sym == SDLK_s) {  // move down
+               moveCam = -camUp;
 //               std::cout << "s" << (angleSpeed / 30.0f) << std::endl;
 //               std::cout << camUp.x << " " << camUp.y << " " << camUp.z << std::endl;
 //               camUp = glm::rotate(camUp, angleSpeed / 30.0f, camRight);
